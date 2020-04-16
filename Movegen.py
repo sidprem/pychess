@@ -46,5 +46,6 @@ def generatePawnMoves(bb: int, color: Color):
     #double pawn moves
     pawnDoubleMoves = shiftBitBoard(pawnsNotMoved,2*Direction.N.value)
         
-    #
+    #pawn promotions
+    
     
