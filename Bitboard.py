@@ -34,7 +34,7 @@ BB_SQUARES = [
     BB_A5, BB_B5, BB_C5, BB_D5, BB_E5, BB_F5, BB_G5, BB_H5,
     BB_A6, BB_B6, BB_C6, BB_D6, BB_E6, BB_F6, BB_G6, BB_H6,
     BB_A7, BB_B7, BB_C7, BB_D7, BB_E7, BB_F7, BB_G7, BB_H7,
-    BB_A8, BB_B8, BB_C8, BB_D8, BB_E8, BB_F8, BB_G8, BB_H8,
+    BB_A8, BB_B8, BB_C8, BB_D8, BB_E8, BB_F8, BB_G8, BB_H8
 ] = [1 << i for i in range(64)]
 
 #File bitboards
@@ -98,17 +98,39 @@ def shiftBitBoard(bb, dir):
 def prettyPrintBitBoard(bb: int) -> str:
     bb_formatted = format(bb,'#066b')
     board = []
-    board.append(bb_formatted[9:2:-1])
-    board.append(bb_formatted[17:10:-1])
-    board.append(bb_formatted[25:18:-1])
-    board.append(bb_formatted[33:26:-1])
-    board.append(bb_formatted[41:34:-1])
-    board.append(bb_formatted[49:42:-1])
-    board.append(bb_formatted[57:50:-1])
-    board.append(bb_formatted[65:58:-1])
+    board.append(bb_formatted[2:10][::-1])
+    board.append(bb_formatted[10:18][::-1])
+    board.append(bb_formatted[18:26][::-1])
+    board.append(bb_formatted[26:34][::-1])
+    board.append(bb_formatted[34:42][::-1])
+    board.append(bb_formatted[42:50][::-1])
+    board.append(bb_formatted[50:58][::-1])
+    board.append(bb_formatted[58:66][::-1])
     for row in board:
         print(' '.join(row))
 
+def initRandomBitBoard():
+    #piece bitboards
+    BB_PAWNS = BB_RANK_3 | BB_RANK_7
+    BB_ROOKS = BB_C8 | BB_H8
+    BB_KNIGHTS = BB_EMPTY
+    BB_BISHOPS = BB_EMPTY
+    BB_QUEENS = BB_EMPTY
+    BB_KINGS = BB_EMPTY
+
+    #color bitboards
+    BB_WHITE_PIECES = BB_RANK_3 | BB_RANK_7
+    BB_BLACK_PIECES = BB_C8 | BB_H8
+    
+    #Occupied and not occupied squares
+    BB_OCCUPIED = BB_WHITE_PIECES | BB_BLACK_PIECES
+    BB_NOT_OCCUPIED = ~BB_OCCUPIED & BB_ALL_SQUARES
+
+    global BB_BYPIECE 
+    BB_BYPIECE = [BB_NOT_OCCUPIED, BB_PAWNS, BB_KNIGHTS, BB_BISHOPS, BB_ROOKS, BB_QUEENS, BB_KINGS, BB_OCCUPIED]
+
+    global BB_BYCOLOR
+    BB_BYCOLOR = [BB_WHITE_PIECES, BB_BLACK_PIECES]   
 
 
 

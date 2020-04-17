@@ -5,10 +5,10 @@ Created on Sat Apr 11 22:29:43 2020
 @author: Sid
 """
 
-from Bitboard import shiftBitBoard, getBitBoardByPieceandColor, BB_SQUARES, \
+from Bitboard import shiftBitBoard, getBitBoardByColor, getBitBoardByPieceandColor, BB_SQUARES, \
     BB_A_FILE, BB_B_FILE, BB_C_FILE, BB_D_FILE, BB_E_FILE, BB_F_FILE, BB_G_FILE, \
     BB_H_FILE, BB_RANK_1, BB_RANK_2, BB_RANK_3, BB_RANK_4, BB_RANK_5, BB_RANK_6, \
-    BB_RANK_7, BB_RANK_8, BB_EMPTY, BB_ALL_SQUARE
+    BB_RANK_7, BB_RANK_8, BB_EMPTY, BB_ALL_SQUARES, initBitBoard, prettyPrintBitBoard, initRandomBitBoard \
 
 from Utils import Color, Direction, PieceType
 
@@ -26,26 +26,74 @@ def generatePawnMoves(bb: int, color: Color):
     moves = [];
     
     #get pawns
-    us = color
-    them = ~color & 1
+    us = Color.WHITE.value
+    them = ~Color.WHITE.value & 1
     
-    us_pawns = getBitBoardByPieceandColor(us,PieceType.PAWN.value)
-    them_pawns = getBitBoardByPieceandColor(them,PieceType.PAWN.value)
+    enemies = getBitBoardByColor(them)
     
-    #promotion potential pawns
-    pawnsToPromote = (us_pawns & BB_RANK_7) if us == Color.WHITE.value else (us_pawns & BB_RANK_2)
+    usPawns = getBitBoardByPieceandColor(us,PieceType.PAWN.value)
+    themPawns = getBitBoardByPieceandColor(them,PieceType.PAWN.value)
     
-    #potential double move pawns
-    pawnsNotMoved = (us_pawns & BB_RANK_2) if us == Color.WHITE.value else (us_pawns & BB_RANK_7)
-    #rest of pawns
-    pawnsNotPromote = us_pawns & (~pawnsToPromote & BB_ALL_SQUARE)
+    emptySquares = ~(getBitBoardByColor(us) | getBitBoardByColor(them)) & BB_ALL_SQUARES
     
-    #quiet pawn move
-    pawnsNormalMoves = shiftBitBoard(pawnsNotPromote,Direction.N.value)
+    pawnsToPromote = (usPawns & BB_RANK_7) if us == Color.WHITE.value else (usPawns & BB_RANK_2)
     
-    #double pawn moves
-    pawnDoubleMoves = shiftBitBoard(pawnsNotMoved,2*Direction.N.value)
+    pawnsNotMoved = (usPawns & BB_RANK_2) if us == Color.WHITE.value else (usPawns & BB_RANK_7)
+
+    pawnsNotPromote = usPawns & (~pawnsToPromote & BB_ALL_SQUARES)
+    
+    pawnDoubleMoves = shiftBitBoard(pawnsNotMoved,2*Direction.N.value) & emptySquares
         
-    #pawn promotions
+    #quiet pawn promotions bb
+    pawnPromotions = shiftBitBoard(pawnsToPromote,Direction.N.value) & emptySquares
     
+    #capture pawn moves
+    pawnCapturesNE = shiftBitBoard(pawnsNotPromote,Direction.NE.value) & enemies
+    pawnCapturesNW = shiftBitBoard(pawnsNotPromote,Direction.NW.value) & enemies
     
+    #capture pawn promotions
+    pawnCapturePromoNE = shiftBitBoard(pawnsToPromote,Direction.NE.value) & enemies
+    pawnCapturePromoNW = shiftBitBoard(pawnsToPromote,Direction.NW.value) & enemies
+    
+    #en passant captures
+    #needs move history on any double pawn moves
+    
+    return moves
+    
+# def test():
+    
+#     initRandomBitBoard()
+    
+#     #get pawns
+#     us = Color.WHITE.value
+#     them = ~Color.WHITE.value & 1
+    
+#     enemies = getBitBoardByColor(them)
+    
+#     usPawns = getBitBoardByPieceandColor(us,PieceType.PAWN.value)
+#     themPawns = getBitBoardByPieceandColor(them,PieceType.PAWN.value)
+    
+#     emptySquares = ~(getBitBoardByColor(us) | getBitBoardByColor(them)) & BB_ALL_SQUARES
+    
+#     pawnsToPromote = (usPawns & BB_RANK_7) if us == Color.WHITE.value else (usPawns & BB_RANK_2)
+    
+#     pawnsNotMoved = (usPawns & BB_RANK_2) if us == Color.WHITE.value else (usPawns & BB_RANK_7)
+
+#     pawnsNotPromote = usPawns & (~pawnsToPromote & BB_ALL_SQUARES)
+    
+#     pawnDoubleMoves = shiftBitBoard(pawnsNotMoved,2*Direction.N.value) & emptySquares
+        
+#     #quiet pawn promotions bb
+#     pawnPromotions = shiftBitBoard(pawnsToPromote,Direction.N.value) & emptySquares
+    
+#     #capture pawn moves
+#     pawnCapturesNE = shiftBitBoard(pawnsNotPromote,Direction.NE.value) & enemies
+#     pawnCapturesNW = shiftBitBoard(pawnsNotPromote,Direction.NW.value) & enemies
+    
+#     #capture pawn promotions
+#     pawnCapturePromoNE = shiftBitBoard(pawnsToPromote,Direction.NE.value) & enemies
+#     pawnCapturePromoNW = shiftBitBoard(pawnsToPromote,Direction.NW.value) & enemies
+    
+#     return prettyPrintBitBoard(pawnCapturePromoNW)
+    
+                                  
