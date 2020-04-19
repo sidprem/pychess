@@ -57,6 +57,25 @@ BB_RANK_6 = BB_RANK_1 << (8*5)
 BB_RANK_7 = BB_RANK_1 << (8*6)
 BB_RANK_8 = BB_RANK_1 << (8*7)
 
+#File bitboards
+BB_NOT_A_FILE = ~BB_A_FILE & BB_ALL_SQUARES
+BB_NOT_C_FILE = ~BB_C_FILE & BB_ALL_SQUARES
+BB_NOT_D_FILE = ~BB_D_FILE & BB_ALL_SQUARES
+BB_NOT_E_FILE = ~BB_E_FILE & BB_ALL_SQUARES
+BB_NOT_F_FILE = ~BB_F_FILE & BB_ALL_SQUARES
+BB_NOT_G_FILE = ~BB_G_FILE & BB_ALL_SQUARES
+BB_NOT_H_FILE = ~BB_H_FILE & BB_ALL_SQUARES
+
+#rank bitboards
+BB_NOT_RANK_1 = ~BB_RANK_1 & BB_ALL_SQUARES
+BB_NOT_RANK_2 = ~BB_RANK_2 & BB_ALL_SQUARES
+BB_NOT_RANK_3 = ~BB_RANK_3 & BB_ALL_SQUARES
+BB_NOT_RANK_4 = ~BB_RANK_4 & BB_ALL_SQUARES
+BB_NOT_RANK_5 = ~BB_RANK_5 & BB_ALL_SQUARES
+BB_NOT_RANK_6 = ~BB_RANK_6 & BB_ALL_SQUARES
+BB_NOT_RANK_7 = ~BB_RANK_7 & BB_ALL_SQUARES
+BB_NOT_RANK_8 = ~BB_RANK_8 & BB_ALL_SQUARES
+
 BB_BYPIECE = []
 BB_BYCOLOR = []
 
@@ -92,8 +111,8 @@ def getBitBoardByPiece(pieceType):
 def getBitBoardByPieceandColor(color, pieceType):
     return getBitBoardByColor(color) & getBitBoardByPiece(pieceType)
 
-def shiftBitBoard(bb, dir):
-    return (bb << dir)
+def shiftBitBoard(bb, direction):
+    return (bb << direction)
 
 def prettyPrintBitBoard(bb: int) -> str:
     bb_formatted = format(bb,'#066b')
@@ -111,16 +130,16 @@ def prettyPrintBitBoard(bb: int) -> str:
 
 def initRandomBitBoard():
     #piece bitboards
-    BB_PAWNS = BB_RANK_3 | BB_RANK_7
-    BB_ROOKS = BB_C8 | BB_H8
+    BB_PAWNS = BB_H8
+    BB_ROOKS = BB_EMPTY
     BB_KNIGHTS = BB_EMPTY
     BB_BISHOPS = BB_EMPTY
     BB_QUEENS = BB_EMPTY
     BB_KINGS = BB_EMPTY
 
     #color bitboards
-    BB_WHITE_PIECES = BB_RANK_3 | BB_RANK_7
-    BB_BLACK_PIECES = BB_C8 | BB_H8
+    BB_WHITE_PIECES = BB_EMPTY
+    BB_BLACK_PIECES = BB_H8
     
     #Occupied and not occupied squares
     BB_OCCUPIED = BB_WHITE_PIECES | BB_BLACK_PIECES

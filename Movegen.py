@@ -26,8 +26,10 @@ def generatePawnMoves(bb: int, color: Color):
     moves = [];
     
     #get pawns
-    us = Color.WHITE.value
-    them = ~Color.WHITE.value & 1
+    us = color.value
+    them = ~color.value & 1
+    
+    direction = Direction.N.value if us == Color.WHITE.value else Direction.S.value
     
     enemies = getBitBoardByColor(them)
     
@@ -42,18 +44,20 @@ def generatePawnMoves(bb: int, color: Color):
 
     pawnsNotPromote = usPawns & (~pawnsToPromote & BB_ALL_SQUARES)
     
-    pawnDoubleMoves = shiftBitBoard(pawnsNotMoved,2*Direction.N.value) & emptySquares
+    pawnNormalMoves = shiftBitBoard(pawnsNotPromote,direction) & emptySquares
+    
+    pawnDoubleMoves = shiftBitBoard(pawnsNotMoved,2*direction) & emptySquares
         
     #quiet pawn promotions bb
-    pawnPromotions = shiftBitBoard(pawnsToPromote,Direction.N.value) & emptySquares
+    pawnPromotions = shiftBitBoard(pawnsToPromote,direction) & emptySquares
     
     #capture pawn moves
-    pawnCapturesNE = shiftBitBoard(pawnsNotPromote,Direction.NE.value) & enemies
-    pawnCapturesNW = shiftBitBoard(pawnsNotPromote,Direction.NW.value) & enemies
+    pawnCapturesNE = shiftBitBoard(pawnsNotPromote,direction + Direction.E.value) & enemies
+    pawnCapturesNW = shiftBitBoard(pawnsNotPromote,direction + Direction.W.value) & enemies
     
     #capture pawn promotions
-    pawnCapturePromoNE = shiftBitBoard(pawnsToPromote,Direction.NE.value) & enemies
-    pawnCapturePromoNW = shiftBitBoard(pawnsToPromote,Direction.NW.value) & enemies
+    pawnCapturePromoNE = shiftBitBoard(pawnsToPromote,direction + Direction.E.value) & enemies
+    pawnCapturePromoNW = shiftBitBoard(pawnsToPromote,direction + Direction.E.value) & enemies
     
     #en passant captures
     #needs move history on any double pawn moves
@@ -65,8 +69,10 @@ def generatePawnMoves(bb: int, color: Color):
 #     initRandomBitBoard()
     
 #     #get pawns
-#     us = Color.WHITE.value
-#     them = ~Color.WHITE.value & 1
+#     them = Color.WHITE.value
+#     us = ~Color.WHITE.value & 1
+    
+#     direction = Direction.N.value if us == Color.WHITE.value else Direction.S.value
     
 #     enemies = getBitBoardByColor(them)
     
@@ -81,6 +87,8 @@ def generatePawnMoves(bb: int, color: Color):
 
 #     pawnsNotPromote = usPawns & (~pawnsToPromote & BB_ALL_SQUARES)
     
+#     pawnNormalMoves = shiftBitBoard(pawnsNotPromote,direction) & emptySquares
+    
 #     pawnDoubleMoves = shiftBitBoard(pawnsNotMoved,2*Direction.N.value) & emptySquares
         
 #     #quiet pawn promotions bb
@@ -94,6 +102,6 @@ def generatePawnMoves(bb: int, color: Color):
 #     pawnCapturePromoNE = shiftBitBoard(pawnsToPromote,Direction.NE.value) & enemies
 #     pawnCapturePromoNW = shiftBitBoard(pawnsToPromote,Direction.NW.value) & enemies
     
-#     return prettyPrintBitBoard(pawnCapturePromoNW)
+#     return prettyPrintBitBoard(pawnNormalMoves)
     
                                   
