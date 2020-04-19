@@ -48,3 +48,24 @@ def generatePawnMoves(bb: int, color: Color):
         
     #
     
+def generateKingMoves(bb: int, color: Color):
+    moves = []
+
+def generateKnightMoves(bb: int, color: Color):
+    moves = []
+    
+    # get color
+    us = color
+    them = ~color & 1
+    
+    us_kights = getBitBoardByPieceandColor(us, PieceType.KIGHT.value)
+    them_knight = getBitBoardByPieceandColor(them, PieceType.KNIGHT.value)
+
+    nne = shiftBitBoard(bb, 2*Direction.N.value + Direction.E.value)
+    nee = shiftBitBoard(bb, Direction.N.value + 2*Direction.E.value)
+    nnw = shiftBitBoard(bb, 2*Direction.N.value + Direction.W.value)
+    nww = shiftBitBoard(bb, Direction.N.value + 2*Direction.W.value)
+    sse = shiftBitBoard(bb, 2*Direction.S.value + Direction.E.value)
+    see = shiftBitBoard(bb, Direction.S.value + 2*Direction.E.value)
+    ssw = shiftBitBoard(bb, 2*Direction.S.value + Direction.W.value)
+    sww = shiftBitBoard(bb, Direction.S.value + 2*Direction.W.value)
