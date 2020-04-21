@@ -8,8 +8,9 @@ Created on Sat Apr 11 22:29:43 2020
 from Bitboard import shiftBitBoard, getBitBoardByColor, getBitBoardByPieceandColor, BB_SQUARES, \
     BB_A_FILE, BB_B_FILE, BB_C_FILE, BB_D_FILE, BB_E_FILE, BB_F_FILE, BB_G_FILE, \
     BB_H_FILE, BB_RANK_1, BB_RANK_2, BB_RANK_3, BB_RANK_4, BB_RANK_5, BB_RANK_6, \
-    BB_RANK_7, BB_RANK_8, BB_EMPTY, BB_ALL_SQUARES, initBitBoard, prettyPrintBitBoard, initRandomBitBoard \
-
+    BB_RANK_7, BB_RANK_8, BB_EMPTY, BB_ALL_SQUARES, BB_NOT_A_FILE, BB_NOT_B_FILE, \
+    BB_NOT_H_FILE, BB_NOT_G_FILE, initBitBoard, prettyPrintBitBoard, initRandomBitBoard
+    
 from Utils import Color, Direction, PieceType
 
 #generate psuedo moves
@@ -77,14 +78,17 @@ def generateKnightMoves(bb: int, color: Color):
     us_kights = getBitBoardByPieceandColor(us, PieceType.KIGHT.value)
     them_knight = getBitBoardByPieceandColor(them, PieceType.KNIGHT.value)
 
-    nne = shiftBitBoard(bb, 2*Direction.N.value + Direction.E.value)
-    nee = shiftBitBoard(bb, Direction.N.value + 2*Direction.E.value)
-    nnw = shiftBitBoard(bb, 2*Direction.N.value + Direction.W.value)
-    nww = shiftBitBoard(bb, Direction.N.value + 2*Direction.W.value)
-    sse = shiftBitBoard(bb, 2*Direction.S.value + Direction.E.value)
-    see = shiftBitBoard(bb, Direction.S.value + 2*Direction.E.value)
-    ssw = shiftBitBoard(bb, 2*Direction.S.value + Direction.W.value)
-    sww = shiftBitBoard(bb, Direction.S.value + 2*Direction.W.value)
+    #direction bitboards
+    nne = shiftBitBoard(bb, 2*Direction.N.value + Direction.E.value) & BB_NOT_A_FILE
+    nee = shiftBitBoard(bb, Direction.N.value + 2*Direction.E.value) & (BB_NOT_A_FILE & BB_NOT_B_FILE)
+    nnw = shiftBitBoard(bb, 2*Direction.N.value + Direction.W.value) & (BB_NOT_A_FILE & BB_NOT_B_FILE)
+    nww = shiftBitBoard(bb, Direction.N.value + 2*Direction.W.value) & BB_NOT_A_FILE
+    sse = shiftBitBoard(bb, 2*Direction.S.value + Direction.E.value) & BB_NOT_H_FILE
+    see = shiftBitBoard(bb, Direction.S.value + 2*Direction.E.value) & (BB_NOT_H_FILE & BB_NOT_G_FILE)
+    ssw = shiftBitBoard(bb, 2*Direction.S.value + Direction.W.value) & (BB_NOT_H_FILE & BB_NOT_G_FILE)
+    sww = shiftBitBoard(bb, Direction.S.value + 2*Direction.W.value) & BB_NOT_H_FILE
+    
+    
     
 # def test():
     
