@@ -31,4 +31,4 @@ class Position:
         self.state = st
         
     def getEpSquare():
-        return (state << )
+        return (state & 0x3F)
