@@ -76,80 +76,83 @@ BB_NOT_RANK_6 = ~BB_RANK_6 & BB_ALL_SQUARES
 BB_NOT_RANK_7 = ~BB_RANK_7 & BB_ALL_SQUARES
 BB_NOT_RANK_8 = ~BB_RANK_8 & BB_ALL_SQUARES
 
-BB_BYPIECE = []
-BB_BYCOLOR = []
+pieceBoard = 
 
-def initBitBoard():
-    #piece bitboards
-    BB_PAWNS = BB_RANK_2 | BB_RANK_7
-    BB_ROOKS = BB_A1 | BB_H1 | BB_A8 | BB_H8
-    BB_KNIGHTS = BB_B1 | BB_G1 | BB_B8 | BB_G8
-    BB_BISHOPS = BB_C1 | BB_F1 | BB_C8 | BB_F8
-    BB_QUEENS = BB_D1 | BB_D8
-    BB_KINGS = BB_E1 | BB_E8
-
-    #color bitboards
-    BB_WHITE_PIECES = BB_RANK_1 | BB_RANK_2
-    BB_BLACK_PIECES = BB_RANK_7 | BB_RANK_8
+class BitBoard:
     
-    #Occupied and not occupied squares
-    BB_OCCUPIED = BB_WHITE_PIECES | BB_BLACK_PIECES
-    BB_NOT_OCCUPIED = ~BB_OCCUPIED & BB_ALL_SQUARES
-
-    global BB_BYPIECE 
-    BB_BYPIECE = [BB_NOT_OCCUPIED, BB_PAWNS, BB_KNIGHTS, BB_BISHOPS, BB_ROOKS, BB_QUEENS, BB_KINGS, BB_OCCUPIED]
-
-    global BB_BYCOLOR
-    BB_BYCOLOR = [BB_WHITE_PIECES, BB_BLACK_PIECES]   
+    def __init__(self):
+        
+    def initBitBoard():
+        #piece bitboards
+        BB_PAWNS = BB_RANK_2 | BB_RANK_7
+        BB_ROOKS = BB_A1 | BB_H1 | BB_A8 | BB_H8
+        BB_KNIGHTS = BB_B1 | BB_G1 | BB_B8 | BB_G8
+        BB_BISHOPS = BB_C1 | BB_F1 | BB_C8 | BB_F8
+        BB_QUEENS = BB_D1 | BB_D8
+        BB_KINGS = BB_E1 | BB_E8
     
-def getBitBoardByColor(color):
-    return BB_BYCOLOR[color]
-
-def getBitBoardByPiece(pieceType):
-    return BB_BYPIECE[pieceType]
+        #color bitboards
+        BB_WHITE_PIECES = BB_RANK_1 | BB_RANK_2
+        BB_BLACK_PIECES = BB_RANK_7 | BB_RANK_8
+        
+        #Occupied and not occupied squares
+        BB_OCCUPIED = BB_WHITE_PIECES | BB_BLACK_PIECES
+        BB_NOT_OCCUPIED = ~BB_OCCUPIED & BB_ALL_SQUARES
     
-def getBitBoardByPieceandColor(color, pieceType):
-    return getBitBoardByColor(color) & getBitBoardByPiece(pieceType)
-
-def shiftBitBoard(bb, direction):
-    return (bb << direction)
-
-def prettyPrintBitBoard(bb: int) -> str:
-    bb_formatted = format(bb,'#066b')
-    board = []
-    board.append(bb_formatted[2:10][::-1])
-    board.append(bb_formatted[10:18][::-1])
-    board.append(bb_formatted[18:26][::-1])
-    board.append(bb_formatted[26:34][::-1])
-    board.append(bb_formatted[34:42][::-1])
-    board.append(bb_formatted[42:50][::-1])
-    board.append(bb_formatted[50:58][::-1])
-    board.append(bb_formatted[58:66][::-1])
-    for row in board:
-        print(' '.join(row))
-
-def initRandomBitBoard():
-    #piece bitboards
-    BB_PAWNS = BB_H8
-    BB_ROOKS = BB_EMPTY
-    BB_KNIGHTS = BB_EMPTY
-    BB_BISHOPS = BB_EMPTY
-    BB_QUEENS = BB_EMPTY
-    BB_KINGS = BB_EMPTY
-
-    #color bitboards
-    BB_WHITE_PIECES = BB_EMPTY
-    BB_BLACK_PIECES = BB_H8
+        global BB_BYPIECE 
+        BB_BYPIECE = [BB_NOT_OCCUPIED, BB_PAWNS, BB_KNIGHTS, BB_BISHOPS, BB_ROOKS, BB_QUEENS, BB_KINGS, BB_OCCUPIED]
     
-    #Occupied and not occupied squares
-    BB_OCCUPIED = BB_WHITE_PIECES | BB_BLACK_PIECES
-    BB_NOT_OCCUPIED = ~BB_OCCUPIED & BB_ALL_SQUARES
+        global BB_BYCOLOR
+        BB_BYCOLOR = [BB_WHITE_PIECES, BB_BLACK_PIECES]   
+    
+    def getBitBoardByColor(color):
+        return BB_BYCOLOR[color]
+    
+    def getBitBoardByPiece(pieceType):
+        return BB_BYPIECE[pieceType]
+    
+    def getBitBoardByPieceandColor(color, pieceType):
+        return getBitBoardByColor(color) & getBitBoardByPiece(pieceType)
 
-    global BB_BYPIECE 
-    BB_BYPIECE = [BB_NOT_OCCUPIED, BB_PAWNS, BB_KNIGHTS, BB_BISHOPS, BB_ROOKS, BB_QUEENS, BB_KINGS, BB_OCCUPIED]
+    def shiftBitBoard(bb, direction):
+        return (bb << direction)
 
-    global BB_BYCOLOR
-    BB_BYCOLOR = [BB_WHITE_PIECES, BB_BLACK_PIECES]   
+    def prettyPrintBitBoard(bb: int) -> str:
+        bb_formatted = format(bb,'#066b')
+        board = []
+        board.append(bb_formatted[2:10][::-1])
+        board.append(bb_formatted[10:18][::-1])
+        board.append(bb_formatted[18:26][::-1])
+        board.append(bb_formatted[26:34][::-1])
+        board.append(bb_formatted[34:42][::-1])
+        board.append(bb_formatted[42:50][::-1])
+        board.append(bb_formatted[50:58][::-1])
+        board.append(bb_formatted[58:66][::-1])
+        for row in board:
+            print(' '.join(row))
+
+    def initRandomBitBoard():
+        #piece bitboards
+        BB_PAWNS = BB_H8
+        BB_ROOKS = BB_EMPTY
+        BB_KNIGHTS = BB_EMPTY
+        BB_BISHOPS = BB_EMPTY
+        BB_QUEENS = BB_EMPTY
+        BB_KINGS = BB_EMPTY
+    
+        #color bitboards
+        BB_WHITE_PIECES = BB_EMPTY
+        BB_BLACK_PIECES = BB_H8
+        
+        #Occupied and not occupied squares
+        BB_OCCUPIED = BB_WHITE_PIECES | BB_BLACK_PIECES
+        BB_NOT_OCCUPIED = ~BB_OCCUPIED & BB_ALL_SQUARES
+    
+        global BB_BYPIECE 
+        BB_BYPIECE = [BB_NOT_OCCUPIED, BB_PAWNS, BB_KNIGHTS, BB_BISHOPS, BB_ROOKS, BB_QUEENS, BB_KINGS, BB_OCCUPIED]
+    
+        global BB_BYCOLOR
+        BB_BYCOLOR = [BB_WHITE_PIECES, BB_BLACK_PIECES]   
 
 
 
