@@ -5,7 +5,7 @@ Created on Mon Apr  6 15:31:57 2020
 @author: Sid
 """
 
-from Utils import Direction
+from Utils import WHITE,BLACK,EMPTY,WPAWN,KNIGHT,BISHOP,ROOK,QUEEN,KING,BPAWN
 
 # Using LERF Board notation for bitboards
 
@@ -76,15 +76,18 @@ BB_NOT_RANK_6 = ~BB_RANK_6 & BB_ALL_SQUARES
 BB_NOT_RANK_7 = ~BB_RANK_7 & BB_ALL_SQUARES
 BB_NOT_RANK_8 = ~BB_RANK_8 & BB_ALL_SQUARES
 
-pieceBoard = 
+BB_BYCOLOR = []
+BB_BYPIECE = []
 
 class BitBoard:
     
     def __init__(self):
+        self.name = 0
         
     def initBitBoard():
         #piece bitboards
-        BB_PAWNS = BB_RANK_2 | BB_RANK_7
+        BB_WPAWNS = BB_RANK_2
+        BB_BPAWNS = BB_RANK_7
         BB_ROOKS = BB_A1 | BB_H1 | BB_A8 | BB_H8
         BB_KNIGHTS = BB_B1 | BB_G1 | BB_B8 | BB_G8
         BB_BISHOPS = BB_C1 | BB_F1 | BB_C8 | BB_F8
@@ -94,17 +97,13 @@ class BitBoard:
         #color bitboards
         BB_WHITE_PIECES = BB_RANK_1 | BB_RANK_2
         BB_BLACK_PIECES = BB_RANK_7 | BB_RANK_8
-        
-        #Occupied and not occupied squares
-        BB_OCCUPIED = BB_WHITE_PIECES | BB_BLACK_PIECES
-        BB_NOT_OCCUPIED = ~BB_OCCUPIED & BB_ALL_SQUARES
-    
-        global BB_BYPIECE 
-        BB_BYPIECE = [BB_NOT_OCCUPIED, BB_PAWNS, BB_KNIGHTS, BB_BISHOPS, BB_ROOKS, BB_QUEENS, BB_KINGS, BB_OCCUPIED]
     
         global BB_BYCOLOR
-        BB_BYCOLOR = [BB_WHITE_PIECES, BB_BLACK_PIECES]   
-    
+        BB_BYCOLOR = [BB_WHITE_PIECES,BB_BLACK_PIECES]
+        
+        global BB_BYPIECE
+        BB_BYPIECE = [BB_WPAWNS,BB_KNIGHTS,BB_BISHOPS,BB_ROOKS,BB_QUEENS,BB_KINGS,BB_BPAWNS]
+
     def getBitBoardByColor(color):
         return BB_BYCOLOR[color]
     
