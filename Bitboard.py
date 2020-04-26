@@ -123,6 +123,7 @@ def prettyPrintBitBoard(bb: int) -> str:
     board.append(bb_formatted[58:66][::-1])
     for row in board:
         print(' '.join(row))
+    print("\n")
 
 def initRandomBitBoard():
     #piece bitboards
