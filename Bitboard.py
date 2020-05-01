@@ -57,6 +57,7 @@ BB_RANK_8 = BB_RANK_1 << (8*7)
 
 #File bitboards
 BB_NOT_A_FILE = ~BB_A_FILE & BB_ALL_SQUARES
+BB_NOT_B_FILE = ~BB_B_FILE & BB_ALL_SQUARES
 BB_NOT_C_FILE = ~BB_C_FILE & BB_ALL_SQUARES
 BB_NOT_D_FILE = ~BB_D_FILE & BB_ALL_SQUARES
 BB_NOT_E_FILE = ~BB_E_FILE & BB_ALL_SQUARES
@@ -77,38 +78,34 @@ BB_NOT_RANK_8 = ~BB_RANK_8 & BB_ALL_SQUARES
 BB_BYCOLOR = []
 BB_BYPIECE = []
 
-    
-def initBitBoard():
-    #piece bitboards
-    BB_WPAWNS = BB_RANK_2
-    BB_BPAWNS = BB_RANK_7
-    BB_ROOKS = BB_A1 | BB_H1 | BB_A8 | BB_H8
-    BB_KNIGHTS = BB_B1 | BB_G1 | BB_B8 | BB_G8
-    BB_BISHOPS = BB_C1 | BB_F1 | BB_C8 | BB_F8
-    BB_QUEENS = BB_D1 | BB_D8
-    BB_KINGS = BB_E1 | BB_E8
-
-    #color bitboards
-    BB_WHITE_PIECES = BB_RANK_1 | BB_RANK_2
-    BB_BLACK_PIECES = BB_RANK_7 | BB_RANK_8
-
-    global BB_BYCOLOR
-    BB_BYCOLOR = [BB_WHITE_PIECES,BB_BLACK_PIECES]
-    
-    global BB_BYPIECE
-    BB_BYPIECE = [BB_WPAWNS,BB_BPAWNS,BB_KNIGHTS,BB_KINGS,BB_BISHOPS,BB_ROOKS,BB_QUEENS]
-
-def getBitBoardByColor(color):
-    return BB_BYCOLOR[color]
-
-def getBitBoardByPiece(pieceType):
-    return BB_BYPIECE[pieceType]
-
-def getBitBoardByPieceandColor(color, pieceType):
-    return getBitBoardByColor(color) & getBitBoardByPiece(pieceType)
-
 def shiftBitBoard(bb, direction):
     return (bb << direction) if (direction >= 0) else (bb >> abs(direction))
+
+def pop_lsb(bb):
+    return (bb & -bb).bit_length()-1
+
+def pop_count(b):
+   if b == 0:
+       return 0
+   elif (b != 0) & ((b & (b-1)) == 0):
+       return 1
+   else:
+       count = 0
+       while b:
+           count+=1
+           b &= b -1
+       return count
+   
+def iterBits(bb):
+    while bb:
+        yield pop_lsb(bb)
+        bb &= bb - 1
+
+def setBits(bb,i):
+    return (bb | BB_SQUARES[i])
+    
+def clearBits(bb,i):
+    return (bb & (~BB_SQUARES[i] & BB_ALL_SQUARES))
 
 def prettyPrintBitBoard(bb: int) -> str:
     bb_formatted = format(bb,'#066b')
@@ -124,30 +121,3 @@ def prettyPrintBitBoard(bb: int) -> str:
     for row in board:
         print(' '.join(row))
     print("\n")
-
-def initRandomBitBoard():
-    #piece bitboards
-    BB_PAWNS = BB_H8
-    BB_ROOKS = BB_EMPTY
-    BB_KNIGHTS = BB_EMPTY
-    BB_BISHOPS = BB_EMPTY
-    BB_QUEENS = BB_EMPTY
-    BB_KINGS = BB_EMPTY
-
-    #color bitboards
-    BB_WHITE_PIECES = BB_EMPTY
-    BB_BLACK_PIECES = BB_H8
-    
-    #Occupied and not occupied squares
-    BB_OCCUPIED = BB_WHITE_PIECES | BB_BLACK_PIECES
-    BB_NOT_OCCUPIED = ~BB_OCCUPIED & BB_ALL_SQUARES
-
-    global BB_BYPIECE 
-    BB_BYPIECE = [BB_NOT_OCCUPIED, BB_PAWNS, BB_KNIGHTS, BB_BISHOPS, BB_ROOKS, BB_QUEENS, BB_KINGS, BB_OCCUPIED]
-
-    global BB_BYCOLOR
-    BB_BYCOLOR = [BB_WHITE_PIECES, BB_BLACK_PIECES]   
-
-
-
-
