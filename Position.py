@@ -17,8 +17,8 @@ class Position:
         self.pieceBoard = [6]*64
         self.enpassant = -1
         self.castles = 0
-        self.movehistory = []
-        self.repetition = 0
+     #TODO:   self.movehistory = []
+     #TODO:   self.repetition = 0
         self.color = 0
         self.us = 0
         self.them = 0
@@ -33,6 +33,8 @@ class Position:
         full_move = state[4]
         half_move = state[5]
         
+        self.color = colorStr[mover]
+        
         for r,rank in enumerate(pieces.split("/")):
             cord = (7-r)*8
             for char in rank:
@@ -43,8 +45,6 @@ class Position:
                     color = WHITE if char.isupper() else BLACK
                     self.setPiece(piece,color,cord)
                     cord+=1
-         
-        self.color = colorStr[mover]
         
         for char in castles:
             if char == "K":
@@ -62,11 +62,15 @@ class Position:
             self.enpassant = -1
         
         #TODO: Half Move & Full Move counter
-        
+    
     def setPiece(self,piece,color,cord):
         self.board[color][piece] = setBits(self.board[color][piece],cord)
         self.pieceBoard[cord] = piece
-        
+        if self.color == color:
+           self.us = setBits(self.us,cord)
+        else:
+           self.them = setBits(self.them,cord) 
+           
     def clearPiece(self,piece,color,cord):
         self.board[color][piece] = clearBits(self.board[color][piece],cord)
         self.pieceBoard[cord] = -1

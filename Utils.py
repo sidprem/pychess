@@ -38,4 +38,4 @@ algebraic = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
 
 moveFlag = [NORMAL,ENPASSANT,KING_CASTLE,QUEEN_CASTLE,KNIGHT_PROMO,BISHOP_PROMO,ROOK_PROMO,QUEEN_PROMO] = range(8)
 
-castle = [W_OO,W_OOO,B_OO,B_OOO] = range(1,5)
+castle = [W_OO,W_OOO,B_OO,B_OOO] = [1,2,4,8]

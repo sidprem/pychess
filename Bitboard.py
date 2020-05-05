@@ -75,14 +75,11 @@ BB_NOT_RANK_6 = ~BB_RANK_6 & BB_ALL_SQUARES
 BB_NOT_RANK_7 = ~BB_RANK_7 & BB_ALL_SQUARES
 BB_NOT_RANK_8 = ~BB_RANK_8 & BB_ALL_SQUARES
 
-BB_BYCOLOR = []
-BB_BYPIECE = []
-
 def shiftBitBoard(bb, direction):
     return (bb << direction) if (direction >= 0) else (bb >> abs(direction))
 
 def pop_lsb(bb):
-    return (bb & -bb).bit_length()-1
+    return int((bb & -bb)).bit_length()-1
 
 def pop_count(b):
    if b == 0:
@@ -93,10 +90,11 @@ def pop_count(b):
        count = 0
        while b:
            count+=1
-           b &= b -1
+           b &= int(b - 1)
        return count
    
 def iterBits(bb):
+    bb = int(bb)
     while bb:
         yield pop_lsb(bb)
         bb &= bb - 1
