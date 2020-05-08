@@ -15,8 +15,6 @@ from Utils import WHITE, BLACK, N, S, E, W, PAWN, KNIGHT, KING, BISHOP, ROOK, QU
     moveFlag, NORMAL, ENPASSANT, KING_CASTLE, QUEEN_CASTLE, W_OO, W_OOO, B_OO, B_OOO
 
 from MoveTables import attacksFrom 
-    
-from Position import Position
 
 from itertools import chain 
 
@@ -230,13 +228,3 @@ def generateQueenMoves(pos):
         
         for m in iterBits(attack):
             yield createMove(sq,m,0) 
-            
-def test():
-    
-    pos = Position()
-    pos.posFromFEN('rnbqkbnr/pppp1ppp/8/8/3pP3/2P5/PP3PPP/RNBQKBNR b KQkq - 1 3')
-    moves = 0
-    for i in generateBishopMoves(pos):
-        des = getDes(i)
-        moves |= BB_SQUARES[des]
-    prettyPrintBitBoard(moves)

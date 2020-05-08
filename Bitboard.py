@@ -119,3 +119,6 @@ def prettyPrintBitBoard(bb: int) -> str:
     for row in board:
         print(' '.join(row))
     print("\n")
+
+
+    

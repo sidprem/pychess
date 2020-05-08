@@ -11,8 +11,6 @@ import numpy as np
 
 from Utils import PAWN,KNIGHT,KING,BISHOP,ROOK,QUEEN,WHITE,BLACK
 
-from Position import Position
-
 # Using LERF Board notation for bitboards
 
 #   a  b  c  d  e  f  g  h    
@@ -86,96 +84,35 @@ ROOK_MAGICS = [
  	0x0001000204080011, 0x0001000204000801, 0x0001000082000401, 0x0001FFFAABFAD1A2
 ]
 
-BISHOP_ATTACK_MASK = [0]*64
-ROOK_ATTACK_MASK = [0]*64
+def attacksFrom(pieceType,square,color=WHITE,blocker=-1):
+    
+    if pieceType == PAWN:
+       return moveArray[0][square] if color == WHITE else moveArray[3][square]
+    elif (pieceType == KNIGHT) | (pieceType == KING):
+        return moveArray[pieceType][square]
+    
+    if blocker != -1:
+        if pieceType == QUEEN:
+            return getSlidingAttack(blocker,square,ROOK) | getSlidingAttack(blocker,square,BISHOP)
+        else:
+            return getSlidingAttack(blocker,square,pieceType)
+    
+    return 0
 
-BISHOP_ATTACKS = np.load("BISHOP_ATTACKS.npy")
-ROOK_ATTACKS = np.load("ROOK_ATTACKS.npy")
+def attackersTo(pos,square,color):
+    
+    pboard = pos.board[color]
 
-#BISHOP ATTACK MASKS
-for sq in range(64):
-    result = 0
-    rk = int(sq/8)
-    f1 = int(sq%8)
+    blocker = pos.us | pos.them
     
-    r = rk+1
-    f = f1+1
+    pawnAttacksTo = attacksFrom(PAWN,square,color=color) & pboard[PAWN]
+    knightAttacksTo = attacksFrom(KNIGHT,square) & pboard[KNIGHT]
+    bishopAttacksTo = attacksFrom(BISHOP,square,blocker=blocker) & (pboard[BISHOP] | pboard[QUEEN])
+    rookAttacksTo = attacksFrom(ROOK,square,blocker=blocker) & (pboard[ROOK] | pboard[QUEEN])
+    kingAttacksTo = attacksFrom(KING,square) & pboard[KING]
 
-    while (r<=6) & (f<=6):
-        result |= (1 << (f+r*8))
-        r = r + 1
-        f = f + 1
-    
-    r = rk+1
-    f = f1-1
-    while (r <=6) & (f >= 1):
-        result |= (1 << (f+r*8))
-        r = r + 1
-        f = f - 1  
- 
-    r = rk-1
-    f = f1+1
-    while (r >=1) & (f <= 6):
-        result |= (1 << (f+r*8))
-        r = r - 1
-        f = f + 1  
+    return  pawnAttacksTo | knightAttacksTo | bishopAttacksTo | rookAttacksTo | kingAttacksTo
 
-    r = rk-1
-    f = f1-1
-    
-    while (r >=1) & (f >= 1):
-        result |= (1 << (f+r*8))
-        r = r - 1
-        f = f - 1       
-        
-    BISHOP_ATTACK_MASK[sq] = result 
-        
-    # b = [0]*512
-    # a = [0]*512
-    
-    # n = pop_count(result)
-    
-    # for i in range(1<<n):
-    #       b[i] = index_to_uint64(i,n,result)
-    #       a[i] = batt(sq,b[i])
-          
-    #       j = ((b[i]*BISHOP_MAGICS[sq]) & 0xFFFFFFFFFFFFFFFF) >> (64 - BBITS[sq])
-          
-    #       BISHOP_ATTACKS[j,sq] = a[i]
-
-#ROOK ATTACK MASKS
-for sq in range(64):
-    result = 0
-    
-    rk = int(sq/8)
-    f1 = int(sq%8)
-    for r in range(rk+1,7):
-        result |= (1 << (f1 + r*8))
-        
-    for r in range(rk-1,0,-1):
-        result |= (1 << (f1 + r*8))
-        
-    for f in range(f1+1,7):
-        result |= (1 << (f + rk*8))
-        
-    for f in range(f1-1,0,-1):
-        result |= (1 << (f + rk*8))
-        
-    ROOK_ATTACK_MASK[sq] = result 
-    
-    # b = [0]*4096
-    # a = [0]*4096
-    
-    # n = pop_count(result)
-    
-    # for i in range(1<<n):
-    #       b[i] = index_to_uint64(i,n,result)
-    #       a[i] = ratt(sq,b[i])
-          
-    #       j = ((b[i]*ROOK_MAGICS[sq]) & 0xFFFFFFFFFFFFFFFF) >> (64 - RBITS[sq])
-          
-    #       ROOK_ATTACKS[j,sq] = a[i]
-    
 def getSlidingAttack(blocker,square,pieceType):
     
     if pieceType == BISHOP:
@@ -272,6 +209,117 @@ def index_to_uint64(index,bits,mask):
         if index & (1 << i):
             result |= (1 << j)
     return result
+
+
+def betweenBB(sq1,sq2):
+    a = lineBB[sq1][sq2]
+    b = (0xFFFFFFFFFFFFFFFF << sq1) & 0xFFFFFFFFFFFFFFFF
+    c = (0xFFFFFFFFFFFFFFFF << sq2) & 0xFFFFFFFFFFFFFFFF
+    d = a & (b ^ c)
+    
+    return d & (d-1)
+
+
+def blockers(pos,square,color):
+    
+    pboard = pos.board[color]
+    blocker = pos.us | pos.them
+    
+    bishopAttacksTo = attacksFrom(BISHOP,square,blocker=blocker) & (pboard[BISHOP] | pboard[QUEEN])
+    rookAttacksTo = attacksFrom(ROOK,square,blocker=blocker) & (pboard[ROOK] | pboard[QUEEN])
+    
+    attackers = (bishopAttacksTo | rookAttacksTo) & pos.them
+    
+BISHOP_ATTACK_MASK = [0]*64
+ROOK_ATTACK_MASK = [0]*64
+
+BISHOP_ATTACKS = np.load("BISHOP_ATTACKS.npy")
+ROOK_ATTACKS = np.load("ROOK_ATTACKS.npy")
+
+#BISHOP ATTACK MASKS
+for sq in range(64):
+    result = 0
+    rk = int(sq/8)
+    f1 = int(sq%8)
+    
+    r = rk+1
+    f = f1+1
+
+    while (r<=6) & (f<=6):
+        result |= (1 << (f+r*8))
+        r = r + 1
+        f = f + 1
+    
+    r = rk+1
+    f = f1-1
+    while (r <=6) & (f >= 1):
+        result |= (1 << (f+r*8))
+        r = r + 1
+        f = f - 1  
+ 
+    r = rk-1
+    f = f1+1
+    while (r >=1) & (f <= 6):
+        result |= (1 << (f+r*8))
+        r = r - 1
+        f = f + 1  
+
+    r = rk-1
+    f = f1-1
+    
+    while (r >=1) & (f >= 1):
+        result |= (1 << (f+r*8))
+        r = r - 1
+        f = f - 1       
+        
+    BISHOP_ATTACK_MASK[sq] = result 
+        
+    # b = [0]*512
+    # a = [0]*512
+    
+    # n = pop_count(result)
+    
+    # for i in range(1<<n):
+    #       b[i] = index_to_uint64(i,n,result)
+    #       a[i] = batt(sq,b[i])
+          
+    #       j = ((b[i]*BISHOP_MAGICS[sq]) & 0xFFFFFFFFFFFFFFFF) >> (64 - BBITS[sq])
+          
+    #       BISHOP_ATTACKS[j,sq] = a[i]
+
+#ROOK ATTACK MASKS
+for sq in range(64):
+    result = 0
+    
+    rk = int(sq/8)
+    f1 = int(sq%8)
+    for r in range(rk+1,7):
+        result |= (1 << (f1 + r*8))
+        
+    for r in range(rk-1,0,-1):
+        result |= (1 << (f1 + r*8))
+        
+    for f in range(f1+1,7):
+        result |= (1 << (f + rk*8))
+        
+    for f in range(f1-1,0,-1):
+        result |= (1 << (f + rk*8))
+        
+    ROOK_ATTACK_MASK[sq] = result 
+    
+    # b = [0]*4096
+    # a = [0]*4096
+    
+    # n = pop_count(result)
+    
+    # for i in range(1<<n):
+    #       b[i] = index_to_uint64(i,n,result)
+    #       a[i] = ratt(sq,b[i])
+          
+    #       j = ((b[i]*ROOK_MAGICS[sq]) & 0xFFFFFFFFFFFFFFFF) >> (64 - RBITS[sq])
+          
+    #       ROOK_ATTACKS[j,sq] = a[i]
+    
    
 map = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
 		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
@@ -309,40 +357,14 @@ for piece in range(0,len(nonSlideAttacks)):
                 continue
             b |= BB_SQUARES[coord]
         moveArray[piece][mcord] = b
-
-def attacksFrom(pieceType,square,color=WHITE,blocker=-1):
-    
-    if pieceType == PAWN:
-       return moveArray[0][square] if color == WHITE else moveArray[3][square]
-    elif (pieceType == KNIGHT) | (pieceType == KING):
-        return moveArray[pieceType][square]
-    
-    if blocker != -1:
-        if pieceType == QUEEN:
-            return getSlidingAttack(blocker,square,ROOK) | getSlidingAttack(blocker,square,BISHOP)
-        else:
-            return getSlidingAttack(blocker,square,pieceType)
-    
-    return 0
-
-def attacksTo(pos,square,color):
-    
-    pboard = pos.board[color]
-    
-    blocker = pos.us | pos.them
-    
-    pawnAttacksTo = attacksFrom(PAWN,square,color) & pboard[PAWN]
-    knightAttacksTo = attacksFrom(KNIGHT,square) & pboard[KNIGHT]
-    bishopAttacksTo = attacksFrom(BISHOP,square,blocker=blocker) & (pboard[BISHOP] | pboard[QUEEN])
-    rookAttacksTo = attacksFrom(ROOK,square,blocker=blocker) & (pboard[ROOK] | pboard[QUEEN])
-    kingAttacksTo = attacksFrom(KING,square) & pboard[KING]
-
-    return  pawnAttacksTo | knightAttacksTo | bishopAttacksTo | rookAttacksTo | kingAttacksTo
-
-
-def test():
-    pos = Position()
-    pos.posFromFEN('rnbqkbnr/pppp1ppp/8/8/3pP3/1NP2P1N/PP3BPP/R2QKB1R b KQkq - 1 3')
+        
+#line BB 
+lineBB = [[0]*64 for i in range(64)] 
+for s1 in range(64):
+    for pieces in [BISHOP,ROOK]:
+        for s2 in range(64):
+            if attacksFrom(pieces,s1,blocker=0) & BB_SQUARES[s2]:
+                lineBB[s1][s2] = (attacksFrom(pieces,s1,blocker=0) & attacksFrom(pieces,s2,blocker=0)) | BB_SQUARES[s1] | BB_SQUARES[s2]
 
     
-    prettyPrintBitBoard(attacksTo(pos,27,WHITE))
+        
