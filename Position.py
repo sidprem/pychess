@@ -10,7 +10,7 @@ from Bitboard import setBits, clearBits
 from Utils import PAWN, KNIGHT, KING, BISHOP, ROOK, QUEEN, WHITE, BLACK, pieceStr, colorStr, W_OO, W_OOO, \
     B_OO, B_OOO, algebraic
 
-from MoveTables import attackersTo
+from MoveTables import attackersTo, blockers
 
 class Position:
     def __init__(self):
@@ -22,8 +22,11 @@ class Position:
         #TODO: self.movehistory = []
         #TODO: self.repetition = 0
         self.color = 0 #color of mover
+        self.opColor = 0 #color of Op
         self.us = 0 #mover pieces
         self.them = 0 #opponent pieces
+        self.blocker = 0 #blockers on the board
+        self.pinned = 0 #pieces absolutely pinned
         self.checkers = 0 #bitboard of all pieces attacking the mover king
         
     def posFromFEN(self,fen):
@@ -37,6 +40,7 @@ class Position:
         #TODO: half_move = state[5]
         
         self.color = colorStr[mover]
+        self.opColor = ~self.color & 1
         
         for r,rank in enumerate(pieces.split("/")):
             cord = (7-r)*8
@@ -45,11 +49,11 @@ class Position:
                     cord+=int(char)
                 else:
                     piece = pieceStr[char]
-                    if piece == KING:
-                        self.king = cord
                     color = WHITE if char.isupper() else BLACK
                     self.setPiece(piece,color,cord)
                     cord+=1
+                    
+        self.blocker = self.us | self.them      
         
         for char in castles:
             if char == "K":
@@ -66,7 +70,8 @@ class Position:
         else:
             self.enpassant = -1
         
-        self.checkers = attackersTo(self,self.king,(~self.color & 1))
+        self.checkers = attackersTo(self.board[self.opColor],self.blocker,self.king,self.opColor)
+        self.pinned = blockers(self.board[self.opColor],self.blocker,self.king)
         
         #TODO: Half Move & Full Move counter
     
@@ -75,6 +80,8 @@ class Position:
         self.pieceBoard[cord] = piece
         if self.color == color:
            self.us = setBits(self.us,cord)
+           if(piece == KING):
+               self.king = cord
         else:
            self.them = setBits(self.them,cord) 
            

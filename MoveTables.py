@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
+6# -*- coding: utf-8 -*-
 """
 Created on Mon Apr 20 23:49:59 2020
 
 @author: lblas
 """
 
-from Bitboard import BB_ALL_SQUARES, BB_SQUARES, pop_count, pop_lsb, prettyPrintBitBoard
+from Bitboard import BB_ALL_SQUARES, BB_SQUARES, pop_count, pop_lsb, iterBits, prettyPrintBitBoard
 
 import numpy as np
 
@@ -84,54 +84,6 @@ ROOK_MAGICS = [
  	0x0001000204080011, 0x0001000204000801, 0x0001000082000401, 0x0001FFFAABFAD1A2
 ]
 
-def attacksFrom(pieceType,square,color=WHITE,blocker=-1):
-    
-    if pieceType == PAWN:
-       return moveArray[0][square] if color == WHITE else moveArray[3][square]
-    elif (pieceType == KNIGHT) | (pieceType == KING):
-        return moveArray[pieceType][square]
-    
-    if blocker != -1:
-        if pieceType == QUEEN:
-            return getSlidingAttack(blocker,square,ROOK) | getSlidingAttack(blocker,square,BISHOP)
-        else:
-            return getSlidingAttack(blocker,square,pieceType)
-    
-    return 0
-
-def attackersTo(pos,square,color):
-    
-    pboard = pos.board[color]
-
-    blocker = pos.us | pos.them
-    
-    pawnAttacksTo = attacksFrom(PAWN,square,color=color) & pboard[PAWN]
-    knightAttacksTo = attacksFrom(KNIGHT,square) & pboard[KNIGHT]
-    bishopAttacksTo = attacksFrom(BISHOP,square,blocker=blocker) & (pboard[BISHOP] | pboard[QUEEN])
-    rookAttacksTo = attacksFrom(ROOK,square,blocker=blocker) & (pboard[ROOK] | pboard[QUEEN])
-    kingAttacksTo = attacksFrom(KING,square) & pboard[KING]
-
-    return  pawnAttacksTo | knightAttacksTo | bishopAttacksTo | rookAttacksTo | kingAttacksTo
-
-def getSlidingAttack(blocker,square,pieceType):
-    
-    if pieceType == BISHOP:
-        mask = BISHOP_ATTACK_MASK[square]
-        bits = BBITS[square]
-        magic = BISHOP_MAGICS[square]
-        
-        index =  (((mask & blocker) * magic) & BB_ALL_SQUARES) >> (64 - bits)
-        
-        return int(BISHOP_ATTACKS[index,square])
-    
-    elif pieceType == ROOK:
-        mask = ROOK_ATTACK_MASK[square]
-        bits = RBITS[square]
-        magic = ROOK_MAGICS[square]
-        
-        index =  (((mask & blocker) * magic) & BB_ALL_SQUARES) >> (64 - bits)
-        
-        return int(ROOK_ATTACKS[index,square])
 
 def batt(sq,block):
     result = 0
@@ -201,6 +153,26 @@ def ratt(sq,block):
             break 
     return result    
 
+def getSlidingAttack(blocker,square,pieceType):
+    
+    if pieceType == BISHOP:
+        mask = BISHOP_ATTACK_MASK[square]
+        bits = BBITS[square]
+        magic = BISHOP_MAGICS[square]
+        
+        index =  (((mask & blocker) * magic) & BB_ALL_SQUARES) >> (64 - bits)
+        
+        return int(BISHOP_ATTACKS[index,square])
+    
+    elif pieceType == ROOK:
+        mask = ROOK_ATTACK_MASK[square]
+        bits = RBITS[square]
+        magic = ROOK_MAGICS[square]
+        
+        index =  (((mask & blocker) * magic) & BB_ALL_SQUARES) >> (64 - bits)
+        
+        return int(ROOK_ATTACKS[index,square])
+    
 def index_to_uint64(index,bits,mask):
     result = 0
     for i in range(index):
@@ -210,6 +182,30 @@ def index_to_uint64(index,bits,mask):
             result |= (1 << j)
     return result
 
+def attacksFrom(pieceType,square,color=WHITE,blocker=-1):
+    
+    if pieceType == PAWN:
+       return moveArray[3][square] if color == WHITE else moveArray[0][square]
+    elif (pieceType == KNIGHT) | (pieceType == KING):
+        return moveArray[pieceType][square]
+    
+    if blocker != -1:
+        if pieceType == QUEEN:
+            return getSlidingAttack(blocker,square,ROOK) | getSlidingAttack(blocker,square,BISHOP)
+        else:
+            return getSlidingAttack(blocker,square,pieceType)
+    
+    return 0
+
+def attackersTo(pboard,blocker,square,color):
+    
+    pawnAttacksTo = attacksFrom(PAWN,square,color=color) & pboard[PAWN]
+    knightAttacksTo = attacksFrom(KNIGHT,square) & pboard[KNIGHT]
+    bishopAttacksTo = attacksFrom(BISHOP,square,blocker=blocker) & (pboard[BISHOP] | pboard[QUEEN])
+    rookAttacksTo = attacksFrom(ROOK,square,blocker=blocker) & (pboard[ROOK] | pboard[QUEEN])
+    kingAttacksTo = attacksFrom(KING,square) & pboard[KING]
+
+    return  pawnAttacksTo | knightAttacksTo | bishopAttacksTo | rookAttacksTo | kingAttacksTo
 
 def betweenBB(sq1,sq2):
     a = lineBB[sq1][sq2]
@@ -219,17 +215,24 @@ def betweenBB(sq1,sq2):
     
     return d & (d-1)
 
-
-def blockers(pos,square,color):
+def blockers(pboard,pieces,square):
     
-    pboard = pos.board[color]
-    blocker = pos.us | pos.them
+    bishopAttacksTo = attacksFrom(BISHOP,square,blocker=0) & (pboard[BISHOP] | pboard[QUEEN])
+    rookAttacksTo = attacksFrom(ROOK,square,blocker=0) & (pboard[ROOK] | pboard[QUEEN])
     
-    bishopAttacksTo = attacksFrom(BISHOP,square,blocker=blocker) & (pboard[BISHOP] | pboard[QUEEN])
-    rookAttacksTo = attacksFrom(ROOK,square,blocker=blocker) & (pboard[ROOK] | pboard[QUEEN])
+    attackers = (bishopAttacksTo | rookAttacksTo)
     
-    attackers = (bishopAttacksTo | rookAttacksTo) & pos.them
+    occ = pieces ^ attackers
     
+    blocker = 0
+    for bits in iterBits(attackers):
+        b = betweenBB(bits,square)
+        inAttack = b & occ
+        if pop_count(inAttack) == 1:
+            blocker |= inAttack
+    
+    return blocker
+            
 BISHOP_ATTACK_MASK = [0]*64
 ROOK_ATTACK_MASK = [0]*64
 

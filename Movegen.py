@@ -9,12 +9,12 @@ from Bitboard import shiftBitBoard, BB_SQUARES, \
     BB_A_FILE, BB_B_FILE, BB_C_FILE, BB_D_FILE, BB_E_FILE, BB_F_FILE, BB_G_FILE, BB_B1, BB_C1, BB_D1, \
     BB_H_FILE, BB_RANK_1, BB_RANK_2, BB_RANK_3, BB_RANK_4, BB_RANK_5, BB_RANK_6, BB_F1, BB_G1, \
     BB_RANK_7, BB_RANK_8, BB_EMPTY, BB_ALL_SQUARES, BB_NOT_A_FILE, BB_NOT_B_FILE, BB_B8, BB_C8, BB_D8, \
-    BB_NOT_H_FILE, BB_NOT_G_FILE, BB_SQUARES, prettyPrintBitBoard, iterBits, BB_F8, BB_G8
+    BB_NOT_H_FILE, BB_NOT_G_FILE, BB_SQUARES, prettyPrintBitBoard, iterBits, pop_lsb, pop_count, BB_F8, BB_G8
     
 from Utils import WHITE, BLACK, N, S, E, W, PAWN, KNIGHT, KING, BISHOP, ROOK, QUEEN, \
     moveFlag, NORMAL, ENPASSANT, KING_CASTLE, QUEEN_CASTLE, W_OO, W_OOO, B_OO, B_OOO
 
-from MoveTables import attacksFrom 
+from MoveTables import attacksFrom, attackersTo, betweenBB
 
 from itertools import chain 
 
@@ -35,6 +35,100 @@ def getDes(move):
 def getFlag(move):
     return (move >> 12) & 0x7
 
+#generate evasions
+def generateEvasionMoves(pos):
+    
+    us = pos.color
+    notFriends = ~pos.us & BB_ALL_SQUARES
+    
+    #double check
+    if pop_count(pos.checkers) > 1:
+        #king moves out of check
+        usKing = pos.board[us][KING]
+        checkerAttacks = 0
+        for cord in iterBits(pos.checkers):
+            checkerAttacks |= attacksFrom(pos.pieceBoard[cord],cord,blocker=0)
+        
+        notCheckAttacks = ~checkerAttacks & BB_ALL_SQUARES
+        
+        for bits in iterBits(usKing):
+            for m in iterBits(attacksFrom(KING,bits) & notFriends & notCheckAttacks):
+                yield createMove(bits,m,0)
+    #single check
+    else:
+        #king move out of check
+        usKing = pos.board[us][KING]
+        checkerAttacks = 0
+        cord = pop_lsb(pos.checkers)
+        checkerAttacks = attacksFrom(pos.pieceBoard[cord],cord,blocker=0)
+        
+        notCheckAttacks = ~checkerAttacks & BB_ALL_SQUARES
+        
+        kingSq = pop_lsb(usKing)
+        for m in iterBits(attacksFrom(KING,kingSq) & notFriends & notCheckAttacks):
+            yield createMove(kingSq,m,0)
+                
+        #capture checker
+        checkerAttackers = attackersTo(pos.board[pos.color],pos.blocker,cord,pos.color)
+        
+        promoteRank = BB_RANK_7 if us == WHITE else BB_RANK_2
+        for bits in iterBits(checkerAttackers):
+            if pos.pieceBoard[bits] == PAWN:
+                if BB_SQUARES[bits] & promoteRank:
+                    for p in moveFlag[4:]:
+                        yield createMove(bits,cord,p)
+                else:
+                    yield createMove(bits,cord,0)
+            else:
+                yield createMove(bits,cord,0)   
+        
+        #check if en-passant capture will remove checker
+        direction = N if us == WHITE else S
+        if (pos.enpassant == cord + direction) & (pos.pieceBoard[cord] == PAWN):
+            pawnsAtEp = attackersTo(pos.board[us],pos.blocker,pos.enpassant,us)
+            for bits in iterBits(pawnsAtEp):
+                yield createMove(bits,pos.enpassant,ENPASSANT)
+                
+        #block check
+        between = betweenBB(cord,kingSq)
+        prettyPrintBitBoard(between)
+        for bb in pos.board[us][KNIGHT:QUEEN]:
+            for sq in iterBits(bb):
+                piece = pos.pieceBoard[sq]  
+                if piece != KING:
+                    attack = attacksFrom(piece,sq,color=us,blocker=pos.blocker)
+                    for m in iterBits(attack & between):
+                        yield createMove(sq,m,0)     
+        
+        #pawns set-wise 
+        usPawns = pos.board[us][PAWN]
+    
+        emptySquares = ~(pos.blocker) & BB_ALL_SQUARES
+        
+        pawnsToPromote = (usPawns & BB_RANK_7) if us == WHITE else (usPawns & BB_RANK_2)
+        
+        pawnsNotMoved = (usPawns & BB_RANK_2) if us == WHITE else (usPawns & BB_RANK_7)
+    
+        pawnsNotPromote = usPawns & (~pawnsToPromote & BB_ALL_SQUARES)
+        
+        pawnNormalMoves = shiftBitBoard(pawnsNotPromote,direction) & emptySquares & between
+        
+        for bits in iterBits(pawnNormalMoves):
+            yield createMove(bits - direction, bits, NORMAL)
+        
+        pawnNotMovedShift = shiftBitBoard(pawnsNotMoved,direction) & emptySquares
+        pawnDoubleMoves = shiftBitBoard(pawnNotMovedShift,direction) & emptySquares & between
+        
+        for bits in iterBits(pawnDoubleMoves):
+            yield createMove(bits - 2*direction, bits, NORMAL)
+        
+        #quiet pawn promotions bb
+        pawnPromotions = shiftBitBoard(pawnsToPromote,direction) & emptySquares & between
+        
+        for bits in iterBits(pawnPromotions):
+            for p in moveFlag[4:]:
+                yield createMove(bits - direction, bits, p)
+                
 #generate psuedo moves
 def generatePseudoLegalMoves(pos):
     pawnMoves = generatePawnMoves(pos)
@@ -54,14 +148,11 @@ def generatePawnMoves(pos):
     
     direction = N if us == WHITE else S
     
-    enPassDir = BB_RANK_5 if us == WHITE else BB_RANK_4
-    
     enemies = pos.them
-    friends = pos.us
     
     usPawns = pos.board[us][PAWN]
     
-    emptySquares = ~(enemies | friends) & BB_ALL_SQUARES
+    emptySquares = ~(pos.blocker) & BB_ALL_SQUARES
     
     pawnsToPromote = (usPawns & BB_RANK_7) if us == WHITE else (usPawns & BB_RANK_2)
     
@@ -70,7 +161,6 @@ def generatePawnMoves(pos):
     pawnsNotPromote = usPawns & (~pawnsToPromote & BB_ALL_SQUARES)
     
     pawnNormalMoves = shiftBitBoard(pawnsNotPromote,direction) & emptySquares
-    
     
     for bits in iterBits(pawnNormalMoves):
         yield createMove(bits - direction, bits, NORMAL)
@@ -109,13 +199,9 @@ def generatePawnMoves(pos):
             yield createMove(bits - (direction + W), bits, p)
     
     if(pos.enpassant != -1):
-        ep_bb = BB_SQUARES[pos.enpassant]
-        ep_viable_NE = shiftBitBoard(usPawns & enPassDir,direction + E) & ep_bb
-        ep_viable_NW = shiftBitBoard(usPawns & enPassDir,direction + W) & ep_bb
-        if ep_viable_NE:
-            yield createMove(pos.enpassant - (direction + E),pos.enpassant,ENPASSANT)
-        elif ep_viable_NW:
-            yield createMove(pos.enpassant - (direction + W),pos.enpassant,ENPASSANT)
+        pawnsAtEp = attackersTo(pos.board[us],pos.blocker,pos.enpassant,us)
+        for bits in iterBits(pawnsAtEp):
+            yield createMove(bits,pos.enpassant,ENPASSANT)
             
 def generateKingMoves(pos):
     
@@ -123,12 +209,9 @@ def generateKingMoves(pos):
     
     usKing = pos.board[us][KING]
     
-    enemies = pos.them
-    friends = pos.us
+    emptySquares = ~(pos.blocker) & BB_ALL_SQUARES
     
-    emptySquares = ~(enemies | friends) & BB_ALL_SQUARES
-    
-    notFriends = ~friends & BB_ALL_SQUARES
+    notFriends = ~pos.us & BB_ALL_SQUARES
     
     for bits in iterBits(usKing):
         for m in iterBits(attacksFrom(KING,bits) & notFriends):
@@ -160,10 +243,8 @@ def generateKnightMoves(pos):
     us = pos.color
     
     usKnights = pos.board[us][KNIGHT]
-    
-    friends = pos.us
-    
-    notFriends = ~friends & BB_ALL_SQUARES
+        
+    notFriends = ~pos.us & BB_ALL_SQUARES
     
     for bits in iterBits(usKnights):
         for m in iterBits(attacksFrom(KNIGHT,bits) & notFriends):
@@ -173,14 +254,11 @@ def generateBishopMoves(pos):
     
     us = pos.color
     
-    enemies = pos.them
-    friends = pos.us
-    
-    blocker = enemies | friends
+    blocker = pos.blocker
 
     usBishops = pos.board[us][BISHOP]
     
-    notFriends = ~friends & BB_ALL_SQUARES
+    notFriends = ~pos.us & BB_ALL_SQUARES
     
     for sq in iterBits(usBishops):
 
@@ -192,15 +270,12 @@ def generateBishopMoves(pos):
 def generateRookMoves(pos):
     
     us = pos.color
-    
-    enemies = pos.them
-    friends = pos.us
-    
-    blocker = enemies | friends
+        
+    blocker = pos.blocker
     
     usRooks = pos.board[us][ROOK]
     
-    notFriends = ~friends & BB_ALL_SQUARES
+    notFriends = ~pos.us & BB_ALL_SQUARES
     
     for sq in iterBits(usRooks):
         
@@ -213,18 +288,20 @@ def generateQueenMoves(pos):
     
     us = pos.color
     
-    enemies = pos.them
-    friends = pos.us
-    
-    blocker = enemies | friends
+    blocker = pos.blocker
     
     usQueens = pos.board[us][QUEEN]
     
-    notFriends = ~friends & BB_ALL_SQUARES
+    notFriends = ~pos.us & BB_ALL_SQUARES
     
     for sq in iterBits(usQueens):
-
         attack = (attacksFrom(BISHOP,sq,blocker=blocker) | attacksFrom(ROOK,sq,blocker=blocker)) & notFriends
-        
         for m in iterBits(attack):
             yield createMove(sq,m,0) 
+
+def generateLegalMoves(pos):
+    
+    moveList = generateEvasionMoves(pos) if pos.checkers > 0 else generatePseudoLegalMoves(pos)
+    
+    return moveList
+        
