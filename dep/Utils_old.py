@@ -36,11 +36,23 @@ algebraic = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
              "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
              "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"]
 
+algPiece = ["","N","K","B","R","Q"]
+
 moveFlag = [NORMAL,ENPASSANT,KING_CASTLE,QUEEN_CASTLE,KNIGHT_PROMO,BISHOP_PROMO,ROOK_PROMO,QUEEN_PROMO] = range(8)
 
 castle = [W_OO,W_OOO,B_OO,B_OOO] = [1,2,4,8]
 
-PRINT_PIECES = [
+printPieces = [
     ["P", "N","K", "B", "R", "Q", "-"],
     ["p", "n","k", "b", "r", "q", "-"]
 ]
+
+
+def getRank(sq):
+    return (sq << 3)
+
+def getFile(sq):
+    return (sq & 7)
+
+def getSquare(file,rank):
+    return (8*rank + file)

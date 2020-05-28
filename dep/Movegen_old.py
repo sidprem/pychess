@@ -5,18 +5,16 @@ Created on Sat Apr 11 22:29:43 2020
 @author: Sid
 """
 
-from Bitboard import shiftBitBoard, BB_SQUARES, \
-    BB_A_FILE, BB_B_FILE, BB_C_FILE, BB_D_FILE, BB_E_FILE, BB_F_FILE, BB_G_FILE, BB_B1, BB_C1, BB_D1, \
-    BB_H_FILE, BB_RANK_1, BB_RANK_2, BB_RANK_3, BB_RANK_4, BB_RANK_5, BB_RANK_6, BB_F1, BB_G1, \
-    BB_RANK_7, BB_RANK_8, BB_EMPTY, BB_ALL_SQUARES, BB_NOT_A_FILE, BB_NOT_B_FILE, BB_B8, BB_C8, BB_D8, \
-    BB_NOT_H_FILE, BB_NOT_G_FILE, BB_SQUARES, prettyPrintBitBoard, iterBits, pop_lsb, pop_count, BB_F8, BB_G8
+from Bitboard_old import shiftBitBoard, BB_SQUARES, \
+    BB_A_FILE, BB_B_FILE, BB_C_FILE, BB_D_FILE, BB_E_FILE, BB_F_FILE, BB_G_FILE, \
+    BB_H_FILE, BB_RANK_1, BB_RANK_2, BB_RANK_3, BB_RANK_4, BB_RANK_5, BB_RANK_6, \
+    BB_RANK_7, BB_RANK_8, BB_EMPTY, BB_ALL_SQUARES, BB_NOT_A_FILE, BB_NOT_B_FILE, \
+    BB_NOT_H_FILE, BB_NOT_G_FILE, BB_SQUARES, prettyPrintBitBoard, iterBits, pop_lsb, pop_count
 
-from Utils import WHITE, BLACK, N, S, E, W, PAWN, KNIGHT, KING, BISHOP, ROOK, QUEEN, \
+from Utils_old import WHITE, BLACK, N, S, E, W, PAWN, KNIGHT, KING, BISHOP, ROOK, QUEEN, \
     moveFlag, NORMAL, ENPASSANT, KING_CASTLE, QUEEN_CASTLE, W_OO, W_OOO, B_OO, B_OOO
 
-from MoveTables import attacksFrom, attackersTo, betweenBB
-
-from itertools import chain
+from MoveTables import attacksFrom, attackersTo, betweenBB, inRay
 
 #0-5 from
 #6-11 to
@@ -91,7 +89,7 @@ def generateEvasionMoves(pos):
 
         #block check
         between = betweenBB(cord,kingSq)
-        for bb in pos.board[us][KNIGHT:QUEEN]:
+        for bb in pos.board[us][KNIGHT:]:
             for sq in iterBits(bb):
                 piece = pos.pieceBoard[sq]
                 if piece != KING:
@@ -130,14 +128,12 @@ def generateEvasionMoves(pos):
 
 #generate psuedo moves
 def generatePseudoLegalMoves(pos):
-    pawnMoves = generatePawnMoves(pos)
-    knightMoves = generateKnightMoves(pos)
-    kingMoves = generateKingMoves(pos)
-    bishopMoves = generateBishopMoves(pos)
-    rookMoves = generateRookMoves(pos)
-    queenMoves = generateQueenMoves(pos)
-
-    return chain(pawnMoves,knightMoves,kingMoves,bishopMoves,rookMoves,queenMoves)
+    yield from generatePawnMoves(pos)
+    yield from generateKnightMoves(pos)
+    yield from generateKingMoves(pos)
+    yield from generateBishopMoves(pos)
+    yield from generateRookMoves(pos)
+    yield from generateQueenMoves(pos)
 
 #pseudo legal pawn moves pawn moves
 def generatePawnMoves(pos):
@@ -178,27 +174,27 @@ def generatePawnMoves(pos):
             yield createMove(bits - direction, bits, p)
 
     #capture pawn moves
-    pawnCapturesNE = shiftBitBoard(pawnsNotPromote,direction + E) & enemies
+    pawnCapturesNE = shiftBitBoard(pawnsNotPromote & BB_NOT_H_FILE,direction + E) & enemies
     for bits in iterBits(pawnCapturesNE):
         yield createMove(bits - (direction + E), bits, NORMAL)
 
-    pawnCapturesNW = shiftBitBoard(pawnsNotPromote,direction + W) & enemies
+    pawnCapturesNW = shiftBitBoard(pawnsNotPromote & BB_NOT_A_FILE,direction + W) & enemies
     for bits in iterBits(pawnCapturesNW):
         yield createMove(bits - (direction + W), bits, NORMAL)
 
     #capture pawn promotions
-    pawnCapturePromoNE = shiftBitBoard(pawnsToPromote,direction + E) & enemies
+    pawnCapturePromoNE = shiftBitBoard(pawnsToPromote & BB_NOT_H_FILE,direction + E) & enemies
     for bits in iterBits(pawnCapturePromoNE):
         for p in moveFlag[4:]:
             yield createMove(bits - (direction + E), bits, p)
 
-    pawnCapturePromoNW = shiftBitBoard(pawnsToPromote,direction + W) & enemies
+    pawnCapturePromoNW = shiftBitBoard(pawnsToPromote & BB_NOT_A_FILE,direction + W) & enemies
     for bits in iterBits(pawnCapturePromoNW):
         for p in moveFlag[4:]:
             yield createMove(bits - (direction + W), bits, p)
 
     if(pos.enpassant != -1):
-        pawnsAtEp = attackersTo(pos.board[us],pos.blocker,pos.enpassant,us)
+        pawnsAtEp = attackersTo(pos.board[us],pos.blocker,pos.enpassant,us) & usPawns
         for bits in iterBits(pawnsAtEp):
             yield createMove(bits,pos.enpassant,ENPASSANT)
 
@@ -299,7 +295,7 @@ def generateQueenMoves(pos):
             yield createMove(sq,m,0)
 
 def generateLegalMoves(pos):
-
+    
     moveList = generateEvasionMoves(pos) if pos.isInCheck() else generatePseudoLegalMoves(pos)
 
     absolutelyPinned = pos.pinned
@@ -339,6 +335,7 @@ def generateLegalMoves(pos):
                 squareAttacked = attackersTo(pos.board[pos.opColor],pos.blocker,des,pos.opColor)
                 if ~(squareAttacked > 0) & 1:
                     yield move
-        elif (~absolutelyPinned & BB_ALL_SQUARES) & BB_SQUARES[orig]:
-            yield move
+        elif ((~absolutelyPinned & BB_ALL_SQUARES) & BB_SQUARES[orig]) | inRay(orig,des,pos.king):
+            if flag == NORMAL:
+                yield move
 

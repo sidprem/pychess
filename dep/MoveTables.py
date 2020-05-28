@@ -5,11 +5,11 @@ Created on Mon Apr 20 23:49:59 2020
 @author: lblas
 """
 
-from Bitboard import BB_ALL_SQUARES, BB_SQUARES, pop_count, pop_lsb, iterBits, prettyPrintBitBoard
+from Bitboard_old import BB_ALL_SQUARES, BB_SQUARES, pop_count, pop_lsb, iterBits, prettyPrintBitBoard
 
 import numpy as np
 
-from Utils import PAWN,KNIGHT,KING,BISHOP,ROOK,QUEEN,WHITE,BLACK
+from Utils_old import PAWN,KNIGHT,KING,BISHOP,ROOK,QUEEN,WHITE,BLACK
 
 # Using LERF Board notation for bitboards
 
@@ -53,7 +53,7 @@ BISHOP_MAGICS = [
  	0x0000011040000000, 0x0000008210400000, 0x0000004104104000, 0x0000002082082000,
  	0x0004000808080800, 0x0002000404040400, 0x0001000202020200, 0x0000800802004000,
  	0x0000800400A00000, 0x0000200100884000, 0x0000400082082000, 0x0000200041041000,
- 	0x000208001010100,  0x0001040008080800, 0x0000208004010400, 0x0000404004010200,
+ 	0x0002080010101000, 0x0001040008080800, 0x0000208004010400, 0x0000404004010200,
  	0x0000840000802000, 0x0000404002011000, 0x0000808001041000, 0x0000404000820800,
  	0x0001041000202000, 0x0000820800101000, 0x0000104400080800, 0x0000020080080080,
  	0x0000404040040100, 0x0000808100020100, 0x0001010100020800, 0x0000808080010400,
@@ -84,6 +84,35 @@ ROOK_MAGICS = [
  	0x0001000204080011, 0x0001000204000801, 0x0001000082000401, 0x0001FFFAABFAD1A2
 ]
 
+BISHOP_ATTACK_MASK = [0]*64
+ROOK_ATTACK_MASK = [0]*64
+
+BISHOP_ATTACKS = np.zeros((512,64),dtype=np.uint64)
+ROOK_ATTACKS = np.zeros((4096,64),dtype=np.uint64)
+
+map = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+		-1,  0,  1,  2,  3,  4,  5,  6,  7, -1, 
+		-1,  8,  9, 10, 11, 12, 13, 14, 15, -1,
+		-1, 16, 17, 18, 19, 20, 21, 22, 23, -1, 
+		-1, 24, 25, 26, 27, 28, 29, 30, 31, -1, 
+		-1, 32, 33, 34, 35, 36, 37, 38, 39, -1, 
+		-1, 40, 41, 42, 43, 44, 45, 46, 47, -1, 
+		-1, 48, 49, 50, 51, 52, 53, 54, 55, -1, 
+		-1, 56, 57, 58, 59, 60, 61, 62, 63, -1, 
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+
+moveArray = [[0]*64 for i in range(4)]
+
+nonSlideAttacks = [
+    [9,11],
+    [-21,-19,-12,-8,8,12,19,21], #knight moves
+    [-11,-10,-9,-1,1,9,10,11], #king moves
+    [-9,-11]
+    ]
+
+lineBB = [[0]*64 for i in range(64)] 
 
 def batt(sq,block):
     result = 0
@@ -219,11 +248,9 @@ def blockers(pboard,pieces,square):
     
     bishopAttacksTo = attacksFrom(BISHOP,square,blocker=0) & (pboard[BISHOP] | pboard[QUEEN])
     rookAttacksTo = attacksFrom(ROOK,square,blocker=0) & (pboard[ROOK] | pboard[QUEEN])
-    
     attackers = (bishopAttacksTo | rookAttacksTo)
     
     occ = pieces ^ attackers
-    
     blocker = 0
     for bits in iterBits(attackers):
         b = betweenBB(bits,square)
@@ -232,13 +259,10 @@ def blockers(pboard,pieces,square):
             blocker |= inAttack
     
     return blocker
+
+def inRay(sq1,sq2,sq3):
+    return lineBB[sq1][sq2] & BB_SQUARES[sq3]
             
-BISHOP_ATTACK_MASK = [0]*64
-ROOK_ATTACK_MASK = [0]*64
-
-BISHOP_ATTACKS = np.load("BISHOP_ATTACKS.npy")
-ROOK_ATTACKS = np.load("ROOK_ATTACKS.npy")
-
 #BISHOP ATTACK MASKS
 for sq in range(64):
     result = 0
@@ -277,18 +301,18 @@ for sq in range(64):
         
     BISHOP_ATTACK_MASK[sq] = result 
         
-    # b = [0]*512
-    # a = [0]*512
+    b = [0]*512
+    a = [0]*512
     
-    # n = pop_count(result)
+    n = pop_count(result)
     
-    # for i in range(1<<n):
-    #       b[i] = index_to_uint64(i,n,result)
-    #       a[i] = batt(sq,b[i])
+    for i in range(1<<n):
+          b[i] = index_to_uint64(i,n,result)
+          a[i] = batt(sq,b[i])
           
-    #       j = ((b[i]*BISHOP_MAGICS[sq]) & 0xFFFFFFFFFFFFFFFF) >> (64 - BBITS[sq])
+          j = ((b[i]*BISHOP_MAGICS[sq]) & 0xFFFFFFFFFFFFFFFF) >> (64 - BBITS[sq])
           
-    #       BISHOP_ATTACKS[j,sq] = a[i]
+          BISHOP_ATTACKS[j,sq] = a[i]
 
 #ROOK ATTACK MASKS
 for sq in range(64):
@@ -310,43 +334,20 @@ for sq in range(64):
         
     ROOK_ATTACK_MASK[sq] = result 
     
-    # b = [0]*4096
-    # a = [0]*4096
+    b = [0]*4096
+    a = [0]*4096
     
-    # n = pop_count(result)
+    n = pop_count(result)
     
-    # for i in range(1<<n):
-    #       b[i] = index_to_uint64(i,n,result)
-    #       a[i] = ratt(sq,b[i])
+    for i in range(1<<n):
+          b[i] = index_to_uint64(i,n,result)
+          a[i] = ratt(sq,b[i])
           
-    #       j = ((b[i]*ROOK_MAGICS[sq]) & 0xFFFFFFFFFFFFFFFF) >> (64 - RBITS[sq])
+          j = ((b[i]*ROOK_MAGICS[sq]) & 0xFFFFFFFFFFFFFFFF) >> (64 - RBITS[sq])
           
-    #       ROOK_ATTACKS[j,sq] = a[i]
+          ROOK_ATTACKS[j,sq] = a[i]
     
    
-map = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
-		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
-		-1,  0,  1,  2,  3,  4,  5,  6,  7, -1, 
-		-1,  8,  9, 10, 11, 12, 13, 14, 15, -1,
-		-1, 16, 17, 18, 19, 20, 21, 22, 23, -1, 
-		-1, 24, 25, 26, 27, 28, 29, 30, 31, -1, 
-		-1, 32, 33, 34, 35, 36, 37, 38, 39, -1, 
-		-1, 40, 41, 42, 43, 44, 45, 46, 47, -1, 
-		-1, 48, 49, 50, 51, 52, 53, 54, 55, -1, 
-		-1, 56, 57, 58, 59, 60, 61, 62, 63, -1, 
-		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
-		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
-
-moveArray = [[0]*64 for i in range(4)]
-
-nonSlideAttacks = [
-    [9,11],
-    [-21,-19,-12,-8,8,12,19,21], #knight moves
-    [-11,-10,-9,-1,1,9,10,11], #king moves
-    [-9,-11]
-    ]
-
-
 for piece in range(0,len(nonSlideAttacks)):
     for index in range(120):
         mcord = map[index]
@@ -362,7 +363,6 @@ for piece in range(0,len(nonSlideAttacks)):
         moveArray[piece][mcord] = b
         
 #line BB 
-lineBB = [[0]*64 for i in range(64)] 
 for s1 in range(64):
     for pieces in [BISHOP,ROOK]:
         for s2 in range(64):
