@@ -10,6 +10,7 @@ from Utils cimport COLOR, PIECE, COLOR_STR, PIECE_STR, ULL, USI
 cdef class Position:
     cdef ULL[:,:] board
     cdef int[:] pieceBoard
+    cdef int[:,:] pieceCount
     cdef int enpassant
     cdef int king
     cdef unsigned int castles
@@ -20,6 +21,7 @@ cdef class Position:
     cdef ULL blocker
     cdef ULL pinned
     cdef ULL checkers
+    cdef ULL zHash
     cdef int ply
     cdef str notation
     cdef dict history
@@ -41,27 +43,7 @@ cdef class Position:
     cdef void undoMove(self)
     
     cpdef moveToSAN(self,move)
-    # def printPosition(self):
-    #     tempBoard = [6]*64
-    #     for bits in iterBits(self.us):
-    #         tempBoard[bits] = printPieces[self.color][self.pieceBoard[bits]]
-
-    #     for bits in iterBits(self.them):
-    #         tempBoard[bits] = printPieces[self.opColor][self.pieceBoard[bits]]
-
-    #     tempBoard = [x if x != EMPTY else printPieces[self.color][EMPTY] for x in tempBoard]
-
-    #     prettyBoard = []
-    #     prettyBoard.append(tempBoard[56:64])
-    #     prettyBoard.append(tempBoard[48:56])
-    #     prettyBoard.append(tempBoard[40:48])
-    #     prettyBoard.append(tempBoard[32:40])
-    #     prettyBoard.append(tempBoard[24:32])
-    #     prettyBoard.append(tempBoard[16:24])
-    #     prettyBoard.append(tempBoard[8:16])
-    #     prettyBoard.append(tempBoard[0:8])
-
-
-    #     for row in prettyBoard:
-    #         print(' '.join(row))
-    #     print("\n")
+    
+    cdef int evaluate(self)
+    
+    cdef int see(self,move)

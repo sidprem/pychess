@@ -5,7 +5,7 @@ Created on Thu May 21 15:11:45 2020
 @author: Sid
 """
 
-from Bitboard cimport pop_count, pop_lsb, attacksFrom, attackersTo, lsb, BB_RANK_7, BB_RANK_2, BB_SQUARES, betweenBB, shiftBitBoard, prettyPrintBitBoard, initAttacks, \
+from Bitboard cimport pop_count, pop_lsb, attacksFrom, attackersTo, lsb, BB_RANK_7, BB_RANK_2, BB_SQUARES, betweenBB, shiftBitBoard, prettyPrintBitBoard, \
                         BB_NOT_H_FILE, BB_NOT_A_FILE, inRay
 
 from Utils cimport PIECE, COLOR, MAX_MOVES, USI, ULL, MOVE_FLAG, DIRECTION, CASTLE
@@ -45,7 +45,7 @@ cpdef array.array generateEvasionMoves(Position pos):
         safeKingMoves = attacksFrom(PIECE.KING,kingSq,COLOR.WHITE,0) & notFriends & notCheckAttacks
         while safeKingMoves:
             cord = lsb(safeKingMoves)
-            moveList[i] = createMove(kingSq,cord,0)
+            moveList[i] = createMove(kingSq,cord,0) if pos.pieceBoard[cord] == <int>PIECE.EMPTY else createMove(kingSq,cord,8)
             i+=1
             safeKingMoves = pop_lsb(safeKingMoves)
     #single check
@@ -58,12 +58,12 @@ cpdef array.array generateEvasionMoves(Position pos):
         safeKingMoves = attacksFrom(PIECE.KING,kingSq,COLOR.WHITE,0) & notFriends & notCheckAttacks
         while safeKingMoves:
             cord = lsb(safeKingMoves)
-            moveList[i] = createMove(kingSq,cord,0)
+            moveList[i] = createMove(kingSq,cord,0) if pos.pieceBoard[cord] == <int>PIECE.EMPTY else createMove(kingSq,cord,8)
             i+=1
             safeKingMoves = pop_lsb(safeKingMoves)
             
         #capture checker
-        checkerAttackers = attackersTo(pos.board[<int>us],pos.blocker,checkSq,us)
+        checkerAttackers = attackersTo(pos.board,pos.blocker,checkSq) & pos.us
         promoteRank = BB_RANK_7 if us == COLOR.WHITE else BB_RANK_2
         while checkerAttackers:
             cord = lsb(checkerAttackers)
@@ -73,18 +73,18 @@ cpdef array.array generateEvasionMoves(Position pos):
                         moveList[i] = createMove(cord,checkSq,<int>p)
                         i+=1
                 else:
-                    moveList[i] = createMove(cord,checkSq,0)
+                    moveList[i] = createMove(cord,checkSq,8)
                     i+=1
             else:
                 if pos.pieceBoard[cord] != <int>PIECE.KING:
-                    moveList[i] = createMove(cord,checkSq,0)
+                    moveList[i] = createMove(cord,checkSq,8)
                     i+=1
             checkerAttackers = pop_lsb(checkerAttackers)
 
         #check if en-passant capture will remove checker
         direction = DIRECTION.N if us == <int>COLOR.WHITE else DIRECTION.S
         if (pos.enpassant == checkSq + <int>direction) & (pos.pieceBoard[checkSq] == <int>PIECE.PAWN):
-            pawnsAtEp = attackersTo(pos.board[<int>us],pos.blocker,pos.enpassant,us)
+            pawnsAtEp = attackersTo(pos.board,pos.blocker,pos.enpassant) & pos.us
             while pawnsAtEp:
                 cord = lsb(pawnsAtEp)
                 moveList[i] = createMove(cord,pos.enpassant,MOVE_FLAG.ENPASSANT)
@@ -100,7 +100,7 @@ cpdef array.array generateEvasionMoves(Position pos):
                     attack = attacksFrom(<PIECE>piece,sq,us,pos.blocker) & between & notFriends
                     while (attack):
                         cord = lsb(attack & between & notFriends)
-                        moveList[i] = createMove(sq,cord,0)
+                        moveList[i] = createMove(sq,cord,0) if pos.pieceBoard[cord] == <int>PIECE.EMPTY else createMove(sq,cord,8)
                         i+=1
                         attack = pop_lsb(attack)
                 bb = pop_lsb(bb)
@@ -179,7 +179,6 @@ cdef array.array generatePawnMoves(Position pos):
     directionAttackE = DIRECTION.NE if us == COLOR.WHITE else DIRECTION.SE
     
     enemies = pos.them
-
     usPawns = pos.board[<int>us,<int>PIECE.PAWN]
     emptySquares = ~pos.blocker
     
@@ -216,14 +215,14 @@ cdef array.array generatePawnMoves(Position pos):
     pawnCapturesNE = shiftBitBoard(pawnsNotPromote & BB_NOT_H_FILE,directionAttackE) & enemies
     while pawnCapturesNE:
         cord = lsb(pawnCapturesNE)
-        moveList[i] = createMove(cord - <int>directionAttackE,cord,0)
+        moveList[i] = createMove(cord - <int>directionAttackE,cord,8)
         i+=1
         pawnCapturesNE = pop_lsb(pawnCapturesNE)
         
     pawnCapturesNW = shiftBitBoard(pawnsNotPromote & BB_NOT_A_FILE,directionAttackW) & enemies
     while pawnCapturesNW:
         cord = lsb(pawnCapturesNW)
-        moveList[i] = createMove(cord - <int>directionAttackW, cord, 0)
+        moveList[i] = createMove(cord - <int>directionAttackW, cord,8)
         i+=1
         pawnCapturesNW = pop_lsb(pawnCapturesNW)
 
@@ -245,7 +244,7 @@ cdef array.array generatePawnMoves(Position pos):
         pawnCapturePromoNW = pop_lsb(pawnCapturePromoNW)
 
     if(pos.enpassant != -1):
-        pawnsAtEp = attackersTo(pos.board[<int>us],pos.blocker,pos.enpassant,us) & usPawns
+        pawnsAtEp = attackersTo(pos.board,pos.blocker,pos.enpassant) & usPawns
         while pawnsAtEp:
             cord = lsb(pawnsAtEp)
             moveList[i] = createMove(cord,pos.enpassant,MOVE_FLAG.ENPASSANT)
@@ -271,7 +270,7 @@ cdef array.array generateKingMoves(Position pos):
     kingAttacks = attacksFrom(PIECE.KING,kingSq,us,pos.blocker) & notFriends
     while kingAttacks:
         cord = lsb(kingAttacks)
-        moveList[i] = createMove(kingSq,cord,0)
+        moveList[i] = createMove(kingSq,cord,0) if pos.pieceBoard[cord] == <int>PIECE.EMPTY else createMove(kingSq,cord,8)
         i+=1
         kingAttacks = pop_lsb(kingAttacks)
 
@@ -305,7 +304,7 @@ cdef array.array generateKingMoves(Position pos):
 cdef array.array generateKnightMoves(Position pos):
     cdef array.array moveList = array.array('H',[0]*MAX_MOVES)
     cdef COLOR us
-    cdef cord, i, sq
+    cdef int cord, i, sq
     cdef ULL notFriends, usKnights, attacks
     i = 0
     us = pos.color
@@ -319,7 +318,7 @@ cdef array.array generateKnightMoves(Position pos):
         attacks = attacksFrom(PIECE.KNIGHT,sq,us,pos.blocker) & notFriends
         while attacks:
             cord = lsb(attacks)
-            moveList[i] = createMove(sq,cord,0)
+            moveList[i] = createMove(sq,cord,0) if pos.pieceBoard[cord] == <int>PIECE.EMPTY else createMove(sq,cord,8)
             i+=1
             attacks = pop_lsb(attacks)
         usKnights = pop_lsb(usKnights)
@@ -331,7 +330,7 @@ cdef array.array generateKnightMoves(Position pos):
 cdef array.array generateBishopMoves(Position pos):
     cdef array.array moveList = array.array('H',[0]*MAX_MOVES)
     cdef COLOR us
-    cdef cord, i, sq
+    cdef int cord, i, sq
     cdef ULL notFriends, blocker, usBishops, attacks
     i = 0
     us = pos.color
@@ -347,7 +346,7 @@ cdef array.array generateBishopMoves(Position pos):
         attacks = attacksFrom(PIECE.BISHOP,sq,us,blocker) & notFriends
         while attacks:
             cord = lsb(attacks)
-            moveList[i] = createMove(sq,cord,0)
+            moveList[i] = createMove(sq,cord,0) if pos.pieceBoard[cord] == <int>PIECE.EMPTY else createMove(sq,cord,8)
             i+=1
             attacks = pop_lsb(attacks)
         usBishops = pop_lsb(usBishops)
@@ -358,7 +357,7 @@ cdef array.array generateBishopMoves(Position pos):
 cdef array.array generateRookMoves(Position pos):
     cdef array.array moveList = array.array('H',[0]*MAX_MOVES)
     cdef COLOR us
-    cdef cord, i, sq
+    cdef int cord, i, sq
     cdef ULL notFriends, blocker, usRooks, attacks
     i = 0
     us = pos.color
@@ -374,7 +373,7 @@ cdef array.array generateRookMoves(Position pos):
         attacks = attacksFrom(PIECE.ROOK,sq,us,blocker) & notFriends
         while attacks:
             cord = lsb(attacks)
-            moveList[i] = createMove(sq,cord,0)
+            moveList[i] = createMove(sq,cord,0) if pos.pieceBoard[cord] == <int>PIECE.EMPTY else createMove(sq,cord,8)
             i+=1
             attacks = pop_lsb(attacks)
         usRooks = pop_lsb(usRooks)
@@ -385,7 +384,7 @@ cdef array.array generateRookMoves(Position pos):
 cdef array.array generateQueenMoves(Position pos):
     cdef array.array moveList = array.array('H',[0]*MAX_MOVES)
     cdef COLOR us
-    cdef cord, i, sq
+    cdef int cord, i, sq
     cdef ULL notFriends, blocker, usQueens, attacks
     i = 0
     us = pos.color
@@ -400,7 +399,7 @@ cdef array.array generateQueenMoves(Position pos):
         attacks = attacksFrom(PIECE.QUEEN,sq,us,blocker) & notFriends
         while attacks:
             cord = lsb(attacks)
-            moveList[i] = createMove(sq,cord,0)
+            moveList[i] = createMove(sq,cord,0) if pos.pieceBoard[cord] == <int>PIECE.EMPTY else createMove(sq,cord,8)
             i+=1
             attacks = pop_lsb(attacks)
         usQueens = pop_lsb(usQueens)
@@ -434,7 +433,7 @@ cdef USI[:] generateLegalMoves(Position pos):
                 for j from 0 <= j < len(pos.board[k]):
                     newBoard[k,j] = pos.board[k,j]
             newBoard[<int>pos.opColor,0] = newBoard[<int>pos.opColor,0] ^ BB_SQUARES[des - <int>direction]
-            checkers = attackersTo(newBoard[<int>pos.opColor],newUsPieces | newThemPieces,pos.king,pos.opColor)
+            checkers = attackersTo(newBoard,newUsPieces | newThemPieces,pos.king) & newThemPieces
             if checkers == <ULL>0:
                 lMoves[i] = move
                 i+=1
@@ -443,7 +442,7 @@ cdef USI[:] generateLegalMoves(Position pos):
             squareAttacked = 0
             while stepOver:
                 sq = lsb(stepOver)
-                squareAttacked |= attackersTo(pos.board[<int>pos.opColor],pos.blocker,sq,pos.opColor)
+                squareAttacked |= attackersTo(pos.board,pos.blocker,sq) & pos.them
                 stepOver = pop_lsb(stepOver)
             if squareAttacked == 0:
                 lMoves[i] = move
@@ -453,20 +452,20 @@ cdef USI[:] generateLegalMoves(Position pos):
             squareAttacked = 0
             while stepOver:
                 sq = lsb(stepOver)
-                squareAttacked |= attackersTo(pos.board[<int>pos.opColor],pos.blocker,sq,pos.opColor)
+                squareAttacked |= attackersTo(pos.board,pos.blocker,sq) & pos.them
                 stepOver = pop_lsb(stepOver)
             if squareAttacked == 0:
                 lMoves[i] = move
                 i+=1
 
         if pos.pieceBoard[orig] == <int>PIECE.KING:
-            if flag == MOVE_FLAG.NORMAL:
-                squareAttacked = attackersTo(pos.board[<int>pos.opColor],pos.blocker,des,pos.opColor)
+            if (flag == MOVE_FLAG.NORMAL) | (flag == MOVE_FLAG.CAPTURES):
+                squareAttacked = attackersTo(pos.board,pos.blocker,des) & pos.them
                 if (~(squareAttacked > 0)) & 1:
                     lMoves[i] = move
                     i+=1
         elif (~absolutelyPinned & BB_SQUARES[orig]) | inRay(orig,des,pos.king):
-            if (flag == MOVE_FLAG.NORMAL) | (flag in [MOVE_FLAG.KNIGHT_PROMO,MOVE_FLAG.BISHOP_PROMO,MOVE_FLAG.ROOK_PROMO,MOVE_FLAG.QUEEN_PROMO]):
+            if (flag == MOVE_FLAG.NORMAL) | (flag == MOVE_FLAG.CAPTURES) | (flag in [MOVE_FLAG.KNIGHT_PROMO,MOVE_FLAG.BISHOP_PROMO,MOVE_FLAG.ROOK_PROMO,MOVE_FLAG.QUEEN_PROMO]):
                 lMoves[i] = move
                 i+=1
     

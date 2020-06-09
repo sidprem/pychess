@@ -45,7 +45,8 @@ ctypedef enum MOVE_FLAG:
     KNIGHT_PROMO,
     BISHOP_PROMO,
     ROOK_PROMO,
-    QUEEN_PROMO
+    QUEEN_PROMO,
+    CAPTURES
 
 cpdef str PIECE_STR
 
@@ -53,6 +54,12 @@ cpdef str COLOR_STR
 
 cdef int MAX_MOVES
 
+cdef int MIN_VALUE
+
+cdef int MAX_VALUE
+
 cpdef ALGEBRAIC
 
 cpdef ALGPIECE
+
+cdef int[:] PIECE_EVAL

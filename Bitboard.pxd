@@ -70,7 +70,7 @@ cdef ULL[:,:] LINE_BB
 
 cpdef str prettyPrintBitBoard(b)
 cpdef void initAttacks()
-cdef ULL attackersTo(ULL[:] pboard,ULL blocker,int square,COLOR color)
+cdef ULL attackersTo(ULL[:,:] board,ULL blocker,int square)
 cdef ULL attacksFrom(PIECE pieceType, int square, COLOR color, ULL blocker)
 cdef ULL blockers(ULL[:] pboard,ULL pieces,int square)
 cdef ULL betweenBB(int sq1,int sq2)

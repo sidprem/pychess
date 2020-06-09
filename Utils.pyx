@@ -4,6 +4,7 @@ Created on Sat May 16 11:14:03 2020
 
 @author: Sid
 """
+import array
 
 PIECE_STR = "PNKBRQ"
 
@@ -19,4 +20,11 @@ ALGEBRAIC = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
              "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"]
 
 ALGPIECE = 'NKBRQ'
+
 MAX_MOVES = 256
+
+MIN_VALUE = -32767
+
+MAX_VALUE = 32767
+
+PIECE_EVAL = array.array('i',[100,300,2000,330,500,900,0])

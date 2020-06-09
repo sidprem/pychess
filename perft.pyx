@@ -7,8 +7,8 @@ Created on Mon May 25 11:46:30 2020
 
 from __future__ import print_function
 from Position cimport Position
-from Movegen cimport generateLegalMoves, getOrig, getDes, createMove
-from Bitboard cimport initAttacks, prettyPrintBitBoard
+from Movegen cimport generateLegalMoves, getOrig, getDes, getFlag
+from Bitboard cimport initAttacks
 from Utils cimport USI, ALGEBRAIC
 
 cdef int perft(int depth,Position pos,int root):
@@ -28,16 +28,15 @@ cdef int perft(int depth,Position pos,int root):
             count = perft(depth - 1,pos,root)
             nodes += count
             pos.undoMove()
-            # if depth == root:
-            #     print(ALGEBRAIC[getOrig(m)]+ALGEBRAIC[getDes(m)] + " " + str(count))           
+            if depth == root:
+                print(ALGEBRAIC[getOrig(m)]+ALGEBRAIC[getDes(m)] + " " + str(count))           
     return nodes
-
 
 def goPerft():
     initAttacks()
     cdef Position pos = Position()
-    pos.posFromFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+    pos.posFromFEN('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1')
     n = 5
     root = 5
-    return perft(n,pos,root)
+    return alphaBeta(MIN_VALUE,MAX_VALUE,1,pos)
     

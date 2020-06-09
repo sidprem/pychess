@@ -405,16 +405,21 @@ cdef ULL getSlidingAttack(ULL blocker, int square, PIECE pieceType):
 
         return ROOK_ATTACKS[index,square]
     
-#Calculate the attackers to a square given a color and blockers
-cdef ULL attackersTo(ULL[:] pboard,ULL blocker,int square,COLOR color):
+#Calculate the attackers to a square given blockers in a position
+cdef ULL attackersTo(ULL[:,:] pboard,ULL blocker,int square):
     cdef ULL pawnAttacksTo, knightAttacksTo, bishopAttacksTo, rookAttacksTo, kingAttacksTo
     
-    pawnAttacksTo = attacksFrom(PIECE.PAWN,square,color,0) & pboard[<int>PIECE.PAWN]
-    knightAttacksTo = attacksFrom(PIECE.KNIGHT,square,color,0) & pboard[<int>PIECE.KNIGHT]
-    bishopAttacksTo = attacksFrom(PIECE.BISHOP,square,color,blocker) & (pboard[<int>PIECE.BISHOP] | pboard[<int>PIECE.QUEEN])
-    rookAttacksTo = attacksFrom(PIECE.ROOK,square,color,blocker) & (pboard[<int>PIECE.ROOK] | pboard[<int>PIECE.QUEEN])
-    kingAttacksTo = attacksFrom(PIECE.KING,square,color,blocker) & pboard[<int>PIECE.KING]
-
+    pawnAttacksTo = (attacksFrom(PIECE.PAWN,square,COLOR.WHITE,0) & pboard[<int>COLOR.WHITE][<int>PIECE.PAWN]) | \
+                    (attacksFrom(PIECE.PAWN,square,COLOR.BLACK,0) & pboard[<int>COLOR.BLACK][<int>PIECE.PAWN]) 
+    knightAttacksTo = (attacksFrom(PIECE.KNIGHT,square,COLOR.WHITE,0) & pboard[<int>COLOR.WHITE][<int>PIECE.KNIGHT]) | \
+                      (attacksFrom(PIECE.KNIGHT,square,COLOR.BLACK,0) & pboard[<int>COLOR.BLACK][<int>PIECE.KNIGHT])
+    bishopAttacksTo = (attacksFrom(PIECE.BISHOP,square,COLOR.WHITE,blocker) & (pboard[<int>COLOR.WHITE][<int>PIECE.BISHOP] | pboard[<int>COLOR.WHITE][<int>PIECE.QUEEN])) | \
+                      (attacksFrom(PIECE.BISHOP,square,COLOR.BLACK,blocker) & (pboard[<int>COLOR.BLACK][<int>PIECE.BISHOP] | pboard[<int>COLOR.BLACK][<int>PIECE.QUEEN]))
+    rookAttacksTo = (attacksFrom(PIECE.ROOK,square,COLOR.WHITE,blocker) & (pboard[<int>COLOR.WHITE][<int>PIECE.ROOK] | pboard[<int>COLOR.WHITE][<int>PIECE.QUEEN])) | \
+                    (attacksFrom(PIECE.ROOK,square,COLOR.BLACK,blocker) & (pboard[<int>COLOR.BLACK][<int>PIECE.ROOK] | pboard[<int>COLOR.BLACK][<int>PIECE.QUEEN]))
+    kingAttacksTo = (attacksFrom(PIECE.KING,square,COLOR.WHITE,blocker) & pboard[<int>COLOR.WHITE][<int>PIECE.KING]) | \
+                    (attacksFrom(PIECE.KING,square,COLOR.BLACK,blocker) & pboard[<int>COLOR.BLACK][<int>PIECE.KING])
+                    
     return  pawnAttacksTo | knightAttacksTo | bishopAttacksTo | rookAttacksTo | kingAttacksTo
 
 #Calculate the attacksFrom a given pieceType on a given square for a given color
